@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Sourcecatcher</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='topnav.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}" />
+  </head>
+  <body>
+    <div class="banner">
+      <a href="/"><h1>Sourcecatcher</h1></a>
+    </div>
+    <div class="main">
+      <div class="description">
+        <p>Find the Twitter source of a Dreamcatcher fansite photo</p>
+      </div>
+      <div class="inputs">
+        <form id="link_form">
+          {% if link %}
+          <input onClick="this.select();" type="text" name="link" size="48" placeholder="direct link to image" value="{{ link }}">
+          {% else %}
+            <input onClick="this.select();" type="text" name="link" size="48" placeholder="direct link to image">
+          {% endif %}
+          <input type="submit" value="submit">
+        </form>
+        <!--
+        <p style="padding-left: 2em">OR</p>
+        <form action="myform.cgi">
+          Upload an image<br>
+          <input type="file" name="fileupload" value="fileupload" id="fileupload">
+          <input type="submit" value="submit">
+        </form>
+        -->
+      </div>
+      <div class="results">
+        {% if link %}
+          <h2>Results</h2>
+          <div class="results">
+            {% if embed %}
+              {{ embed|safe }}
+              {% if embed2 %}
+                {{ embed2|safe }}
+                {% if embed3 %}
+                  {{ embed3|safe }}
+                {% endif %}
+              {% endif %}
+            {% elif tweet_source %}
+              <a href="{{ tweet_source }}">{{ tweet_source }}</a>
+            {% else %}
+              <p style="text-align: center">Could not analyze image</p>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+      <div class="footer">
+        <p>Currently indexing {{ num_photos }} photos from {{ num_tweets }} tweets</p>
+        <p>Last updated {{ mtime }} ago</p>
+      </div>
+    </div>
+  </body>
+</html>
