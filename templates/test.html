@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <title>Sourcecatcher</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='topnav.css') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}" />
@@ -17,12 +18,13 @@
       <div class="inputs">
         <form id="link_form">
           {% if link %}
-          <input onClick="this.select();" type="text" name="link" size="48" placeholder="direct link to image" value="{{ link }}">
+          <input onClick="this.select();" type="text" name="link" size="24" placeholder="direct link to image" value="{{ link }}">
           {% else %}
-            <input onClick="this.select();" type="text" name="link" size="48" placeholder="direct link to image">
+            <input onClick="this.select();" type="text" name="link" size="24" placeholder="direct link to image">
           {% endif %}
-          <input type="submit" value="submit">
+          <input id="link_submit_btn" type="submit" value="submit">
         </form>
+        {% if null %}
         <!--
         <p style="padding-left: 2em">OR</p>
         <form action="myform.cgi">
@@ -31,6 +33,7 @@
           <input type="submit" value="submit">
         </form>
         -->
+        {% endif %}
       </div>
       <div class="results">
         {% if link %}

@@ -11,6 +11,7 @@ html, body {
   background-image: url("moon.png");
   background-repeat: no-repeat;
   background-position: center;
+  margin: 0 auto;
 }
 
 h1 {
@@ -50,14 +51,11 @@ h2 {
 }
 
 .inputs {
-  padding: 2em;
   max-width: 600px;
   margin: 0 auto;
 }
 
-#link_form {
-  margin: 0 auto;
-  display: block;
+#link_form { margin: 0 auto; display: block;
   text-align: center;
 }
 
@@ -79,3 +77,24 @@ h2 {
   margin: 0 auto;
   text-align: left;
 }
+
+@media screen and (max-width: 800px) {
+  h1 {
+    font-size: 3em;
+    text-align: center;
+  }
+
+  .main {
+    width: 95%;
+    padding: 0;
+  }
+
+  input {
+    font-size: 1.5em;
+  }
+
+  #link_submit_btn {
+    margin-top: 0.5em;
+  }
+}
+
