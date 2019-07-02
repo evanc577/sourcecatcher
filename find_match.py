@@ -13,7 +13,7 @@ from datetime import datetime
 
 def find(location, path):
     index = AnnoyIndex(64, metric='hamming')
-    index.load('phash_index.ann')
+    index.load('live/phash_index.ann')
 
     if location == 'url':
         response = requests.get(path)
@@ -27,7 +27,7 @@ def find(location, path):
 
     results = index.get_nns_by_vector(phash_arr, 16, include_distances=True)
 
-    conn = sqlite3.connect('twitter_scraper.db')
+    conn = sqlite3.connect('live/twitter_scraper.db')
     c = conn.cursor()
 
     basenames = []
@@ -58,7 +58,7 @@ def find(location, path):
     return basenames, tweet_ids
 
 def stats():
-    conn = sqlite3.connect('twitter_scraper.db')
+    conn = sqlite3.connect('live/twitter_scraper.db')
     c = conn.cursor()
 
     c.execute('SELECT COUNT() FROM info')
@@ -95,7 +95,7 @@ def secs_to_str(secs):
         if hrs == 1:
             return '1 hour'
         else:
-            return '{} hour(s)'.format(hrs)
+            return '{} hours'.format(hrs)
     days = secs // SECS_PER_DAY
     if days == 1:
         return '1 day'

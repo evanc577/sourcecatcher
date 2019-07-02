@@ -52,7 +52,10 @@ def gen_phash():
     c.execute('CREATE TABLE IF NOT EXISTS annoy (filename text, path text, idx int32, UNIQUE (idx))')
 
     files = enumerate(Path(media_dir).glob('*/*/*.jpg'))
-    with Pool(processes=cpu_count()) as pool:
+    num_cpus = cpu_count() // 2
+    if num_cpus == 0:
+        num_cpus = 1
+    with Pool(processes=num_cpus) as pool:
         for r in pool.imap(insert_phash, files, chunksize=64):
             index.add_item(r[3], r[0])
             c.execute('INSERT INTO annoy VALUES (?,?,?)', (r[1], r[2], r[3]))

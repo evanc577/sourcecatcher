@@ -46,6 +46,11 @@ def hello_world():
             tweet_source=tweet_source, embed=embed, embed2=embed2, embed3=embed3,
             num_photos=num_photos, num_tweets=num_tweets, mtime=mtime)
 
+def add_result_title(html, tweet_source):
+    header = '<div class="result">\n<div class="result_title">\n<a href={0} ">{0}</a>'.format(tweet_source)
+    footer = '\n</div>'
+    return header + html + footer
+
 def get_embed(tweet_id):
     tweet_source = 'https://www.twitter.com/a/status/{}'.format(tweet_id)
     url = urllib.parse.quote(tweet_source, safe='')
@@ -56,3 +61,19 @@ def get_embed(tweet_id):
         return html
     except:
         return None
+
+def remove_scripts(html):
+    begin = '<script'
+    end = '</script>'
+    idx1 = html.find(begin)
+    if idx1 == -1:
+        return html
+
+    idx2 = html.find(end)
+    if idx2 == -1:
+        html = html[:idx1]
+    else:
+        idx2 = idx2 + len(end)
+        html = html[:idx1] + html[idx2:]
+
+    return html

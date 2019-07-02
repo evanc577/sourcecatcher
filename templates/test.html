@@ -34,8 +34,9 @@
       </div>
       <div class="results">
         {% if link %}
-          <h2>Results</h2>
-          <div class="results">
+          <div class="results_header">
+            <h2>Results</h2>
+          </div>
             {% if embed %}
               {{ embed|safe }}
               {% if embed2 %}
@@ -44,17 +45,19 @@
                   {{ embed3|safe }}
                 {% endif %}
               {% endif %}
-            {% elif tweet_source %}
-              <a href="{{ tweet_source }}">{{ tweet_source }}</a>
             {% else %}
               <p style="text-align: center">Could not analyze image</p>
             {% endif %}
-          </div>
         {% endif %}
       </div>
       <div class="footer">
-        <p>Currently indexing {{ num_photos }} photos from {{ num_tweets }} tweets</p>
-        <p>Last updated {{ mtime }} ago</p>
+        <p>
+        Currently indexing {{ num_photos }} photos from {{ num_tweets }} tweets
+        <br>
+        Last updated {{ mtime }} ago
+        <br><br>
+        Contact <a href="https://www.reddit.com/u/ipwnmice">/u/ipwnmice</a> for more information
+        </p>
       </div>
     </div>
   </body>

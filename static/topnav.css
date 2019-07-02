@@ -46,8 +46,7 @@ h2 {
 .footer {
   font-size: 1em;
   max-width: 600px;
-  text-align: center;
-  margin: 0 auto;
+  margin: 3em auto;
 }
 
 .inputs {
@@ -64,9 +63,19 @@ h2 {
 
 .results {
   max-width: 600px;
-  margin: 0 auto;
+  margin: 2em auto;
+}
+
+.result {
+  border-style: solid;
+  border-width: 1px;
+}
+
+.result_link {
+  display: block;
 }
 
 *[id^='twitter-widget-'] {
   margin: 0 auto;
+  text-align: left;
 }
