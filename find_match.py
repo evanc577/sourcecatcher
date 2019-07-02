@@ -16,9 +16,16 @@ def find(location, path):
     index.load('live/phash_index.ann')
 
     if location == 'url':
-        response = requests.get(path)
-        img_bytes = BytesIO(response.content)
-        img = Image.open(img_bytes)
+        MAX_DOWNLOAD = 15 * 1024 * 1024
+        response = requests.get(path, stream=True)
+        size = 0
+        content = bytearray()
+        for chunk in response.iter_content(1024):
+            size += len(chunk)
+            content += chunk
+            if size > MAX_DOWNLOAD:
+                raise ValueError
+        img = Image.open(BytesIO(content))
     else:
         img = Image.open(path)
 

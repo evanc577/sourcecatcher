@@ -1,12 +1,46 @@
 from flask import Flask, flash, redirect, render_template, request, session, abort
 from find_match import find, stats
+from werkzeug.utils import secure_filename
 import requests
 import urllib
+import os
+
+UPLOAD_FOLDER = 'uploads'
+try:
+    os.mkdir(UPLOAD_FOLDER)
+except FileExistsError:
+    pass
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
+
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024
+
+
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
+    if request.method == 'POST':
+        f = request.files['file']
+        filename = secure_filename(f.filename)
+        if f.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        f.save(path)
+        html = find_and_render('file', path)
+        os.remove(path)
+        return html
+    else:
+        link = request.args.get('link')
+        return find_and_render('url', link)
+
 
 @app.route('/')
-def hello_world():
+def root():
     link = request.args.get('link')
+    return find_and_render('url', link)
+
+def find_and_render(location, path):
     basename = None
     tweet_id = None
     direct_link = None
@@ -17,9 +51,13 @@ def hello_world():
 
     num_photos, num_tweets, mtime= stats()
 
-    if link is not None:
+    if path is not None:
         try:
-            found = map(list, zip(*find('url', link)))
+            if location == 'url':
+                found = map(list, zip(*find('url', path)))
+            elif location == 'file':
+                found = map(list, zip(*find('file', path)))
+
             id_set = set()
             count = 0
             for candidate in found:
@@ -42,9 +80,23 @@ def hello_world():
         except Exception as e:
             print(e)
 
-    return render_template('test.html', link=link, direct_link=direct_link,
-            tweet_source=tweet_source, embed=embed, embed2=embed2, embed3=embed3,
-            num_photos=num_photos, num_tweets=num_tweets, mtime=mtime)
+    kwargs = {
+            'direct_link': direct_link,
+            'tweet_source': tweet_source,
+            'embed': embed,
+            'embed2': embed2,
+            'embed3': embed3,
+            'num_photos': num_photos,
+            'num_tweets': num_tweets,
+            'mtime': mtime,
+            }
+    if location == 'url':
+        kwargs['link'] = path
+
+    if path is not None:
+        kwargs['nothing'] = True
+
+    return render_template('test.html', **kwargs)
 
 def add_result_title(html, tweet_source):
     header = '<div class="result">\n<div class="result_title">\n<a href={0} ">{0}</a>'.format(tweet_source)
