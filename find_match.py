@@ -51,7 +51,9 @@ def find(location, path):
         dirname, basename = c.fetchone()
         fullpath = os.path.join(dirname, basename)
         c.execute('SELECT id FROM info WHERE filename=(?) AND path=(?)', (basename, dirname))
-        tweet_id = c.fetchone()[0]
+        tweet_id = c.fetchone()
+        print(tweet_id)
+        tweet_id = tweet_id[0]
 
         print('local path:   {}'.format(fullpath))
         print('direct link:  https://pbs.twimg.com/media/{}'.format(basename))

@@ -122,7 +122,7 @@ tweepy_kwargs = {
         'include_rts': False,
         }
 
-conn = sqlite3.connect('twitter_scraper.db')
+conn = sqlite3.connect('working/twitter_scraper.db')
 c = conn.cursor()
 c.execute('CREATE TABLE IF NOT EXISTS users (user text, last_id int64, UNIQUE (user))')
 c.execute('CREATE TABLE IF NOT EXISTS info (filename text, path text, user text, id int64, UNIQUE (filename, path))')

@@ -16,8 +16,10 @@ then
   python gen_phashes.py
 
   LIVE_DIR=live/
+  WORKING_DIR=working/
   mkdir -p $LIVE_DIR
+  mkdir -p $WORKING_DIR
 
-  cp twitter_scraper.db $LIVE_DIR
-  cp phash_index.ann $LIVE_DIR
+  cp $WORKING_DIR/twitter_scraper.db $LIVE_DIR
+  cp $WORKING_DIR/phash_index.ann $LIVE_DIR
 fi

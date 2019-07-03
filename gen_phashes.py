@@ -46,7 +46,7 @@ def gen_phash():
 
     index = AnnoyIndex(64, metric='hamming')
 
-    conn = sqlite3.connect('twitter_scraper.db')
+    conn = sqlite3.connect('working/twitter_scraper.db')
     c = conn.cursor()
     c.execute('DROP TABLE IF EXISTS annoy')
     c.execute('CREATE TABLE IF NOT EXISTS annoy (filename text, path text, idx int32, UNIQUE (idx))')
@@ -63,7 +63,7 @@ def gen_phash():
     conn.commit()
 
     index.build(20)
-    index.save('phash_index.ann')
+    index.save('working/phash_index.ann')
 
 
 if __name__ == '__main__':
