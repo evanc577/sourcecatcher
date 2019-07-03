@@ -10,7 +10,7 @@ mkdir -p $LIVE_DIR
 cp twitter_scraper.db $BACKUP_DIR
 cp phash_index.ann $BACKUP_DIR
 
-source ./twitter_venv/bin/activate
+source ./sourcecatcher_venv/bin/activate
 python bot.py
 python gen_phashes.py
 

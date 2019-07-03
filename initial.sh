@@ -11,7 +11,7 @@ then
   rm -f twitter_scraper.db
   rm -f phash_index.ann
 
-  source ./twitter_venv/bin/activate
+  source ./sourcecatcher_venv/bin/activate
   python bot.py
   python gen_phashes.py
 
