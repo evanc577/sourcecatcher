@@ -76,7 +76,7 @@ def stats():
     c.execute('SELECT COUNT() FROM tweet_text')
     num_tweets = c.fetchone()[0]
 
-    mtime = datetime.utcfromtimestamp(os.path.getmtime('phash_index.ann'))
+    mtime = datetime.utcfromtimestamp(os.path.getmtime('live/phash_index.ann'))
     now = datetime.utcnow()
     time_diff = secs_to_str((now - mtime).seconds)
 
