@@ -8,7 +8,7 @@ import os
 UPLOAD_FOLDER = 'uploads'
 try:
     os.mkdir(UPLOAD_FOLDER)
-except FileExistsError:
+except:
     pass
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
