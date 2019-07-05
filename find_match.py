@@ -104,7 +104,9 @@ def secs_to_str(secs):
     SECS_PER_HR = SECS_PER_MIN * 60
     SECS_PER_DAY = SECS_PER_HR * 24
 
-    if secs < SECS_PER_MIN: if secs == 1: return '1 second'
+    if secs < SECS_PER_MIN:
+        if secs == 1:
+            return '1 second'
         else:
             return '{} seconds'.format(secs)
     if secs < SECS_PER_HR:

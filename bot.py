@@ -67,7 +67,7 @@ def download_tweet_media(tweet):
     """try to download images linked in tweet"""
     if 'extended_entities' in tweet and 'media' in tweet['extended_entities']:
         for media in tweet['extended_entities']['media']:
-            print('{}:'.format(tweet['user']['screen_name']))
+            print('{}/{}:'.format(tweet['user']['screen_name'], tweet['id_str']))
             if 'video_info' in media:
                 return
             else:
@@ -132,7 +132,7 @@ if __name__ == "__main__":
             'compression': False,
             'tweet_mode': 'extended',
             'exclude_replies': True,
-            'include_rts': False,
+            # 'include_rts': False,
             }
 
     conn = sqlite3.connect('working/twitter_scraper.db')
@@ -167,6 +167,7 @@ if __name__ == "__main__":
         while num_tweets > 0:
             for tweet in tweets:
                 tweet = tweet._json
+
                 # update last tweet read
                 if last_id is None or tweet['id'] > last_id:
                     try:
@@ -180,6 +181,10 @@ if __name__ == "__main__":
                 if first_id is None or tweet['id'] < first_id:
                     first_id = tweet['id']
 
+                # skip if tweet is actually a retweet
+                if 'retweeted_status' in tweet:
+                    continue
+
                 # download tweet media
                 download_tweet_media(tweet)
 
@@ -189,5 +194,3 @@ if __name__ == "__main__":
             else:
                 tweets = api.user_timeline(user, since_id=last_id+1, **tweepy_kwargs)
             num_tweets = len(tweets)
-
-
