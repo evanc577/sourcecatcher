@@ -104,6 +104,7 @@ def add_result_title(html, tweet_source):
     return header + html + footer
 
 def get_embed(tweet_id):
+    """get html for an embedded tweet"""
     tweet_source = 'https://www.twitter.com/a/status/{}'.format(tweet_id)
     url = urllib.parse.quote(tweet_source, safe='')
     get_url = 'https://publish.twitter.com/oembed?url={}'.format(url)
@@ -115,6 +116,7 @@ def get_embed(tweet_id):
         return None
 
 def remove_scripts(html):
+    """experimental: remove scripts from html"""
     begin = '<script'
     end = '</script>'
     idx1 = html.find(begin)

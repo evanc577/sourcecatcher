@@ -12,9 +12,20 @@ import time
 from datetime import datetime
 
 def find(location, path):
+    """find the closest images to an image
+
+    Given a path or a url to an image, returns the closest matches
+    (phash hamming distance)
+    
+    Arguments:
+    location: 'url' or 'path'
+    path: the actual url or path to the image
+    """
+
     index = AnnoyIndex(64, metric='hamming')
     index.load('live/phash_index.ann')
 
+    # get the requested image
     if location == 'url':
         MAX_DOWNLOAD = 15 * 1024 * 1024
         response = requests.get(path, stream=True)
@@ -29,9 +40,11 @@ def find(location, path):
     else:
         img = Image.open(path)
 
+    # get the image's phash
     phash = imagehash.phash(img)
     phash_arr = phash.hash.flatten()
 
+    # find the closest mateches
     results = index.get_nns_by_vector(phash_arr, 16, include_distances=True)
 
     conn = sqlite3.connect('live/twitter_scraper.db')
@@ -40,6 +53,7 @@ def find(location, path):
     basenames = []
     tweet_ids = []
 
+    # look up the location of the match and its tweet info
     first = True
     for idx, score in map(list, zip(*results)):
         if not first and score > 8:
@@ -67,6 +81,7 @@ def find(location, path):
     return basenames, tweet_ids
 
 def stats():
+    """returns stats for the database"""
     conn = sqlite3.connect('live/twitter_scraper.db')
     c = conn.cursor()
 
@@ -84,13 +99,12 @@ def stats():
     return num_photos, num_tweets, time_diff
 
 def secs_to_str(secs):
+    """converts number of seconds to a human readable string"""
     SECS_PER_MIN = 60
     SECS_PER_HR = SECS_PER_MIN * 60
     SECS_PER_DAY = SECS_PER_HR * 24
 
-    if secs < SECS_PER_MIN:
-        if secs == 1:
-            return '1 second'
+    if secs < SECS_PER_MIN: if secs == 1: return '1 second'
         else:
             return '{} seconds'.format(secs)
     if secs < SECS_PER_HR:

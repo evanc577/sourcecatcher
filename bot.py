@@ -15,6 +15,14 @@ from PIL import Image
 import io
 
 def mkdir(time_str):
+    """create a directory for a given time
+
+    Example:
+    Given 'Sat Dec 14 04:35:55 +0000 2013', creates media_dir/2013/12/
+    
+    Arguments:
+    time_str: time string returned by twitter api
+    """
     timestamp = mktime_tz(parsedate_tz(time_str))
     date = datetime.fromtimestamp(timestamp)
     year = '{:04d}'.format(date.year)
@@ -28,6 +36,7 @@ def mkdir(time_str):
     return path, date
 
 def download_media(url, path):
+    """downloads media to path"""
     filename = url.split('/')[-1]
     path = os.path.join(path, filename)
 
@@ -43,6 +52,7 @@ def download_media(url, path):
     return filename
 
 def write_exif_date(path, filename, date):
+    """write exif date to an image"""
     date_str = date.strftime('%Y:%m:%d %k:%M:%S')
     fullpath = os.path.join(path, filename)
 
@@ -54,6 +64,7 @@ def write_exif_date(path, filename, date):
 
 
 def download_tweet_media(tweet):
+    """try to download images linked in tweet"""
     if 'extended_entities' in tweet and 'media' in tweet['extended_entities']:
         for media in tweet['extended_entities']['media']:
             print('{}:'.format(tweet['user']['screen_name']))
@@ -88,92 +99,95 @@ def download_tweet_media(tweet):
 
     conn.commit()
 
-pp = pprint.PrettyPrinter()
+if __name__ == "__main__":
+    pp = pprint.PrettyPrinter()
 
-try:
-    dirpath = os.path.dirname(os.path.realpath(__file__))
-    path = os.path.join(dirpath, 'config.yaml')
-    with open(path) as f:
-        config = yaml.safe_load(f)
-except IOError:
-    print("error loading config file")
-    sys.exit(1)
-try:
-    access_token = config['access_token']
-    access_secret = config['access_secret']
-    consumer_key = config['consumer_key']
-    consumer_secret = config['consumer_secret']
-    users = config['users']
-    media_dir = config['media_dir']
-except KeyError:
-    print("could not parse users file")
-    sys.exit(1)
+    # parse config.yaml
+    try:
+        dirpath = os.path.dirname(os.path.realpath(__file__))
+        path = os.path.join(dirpath, 'config.yaml')
+        with open(path) as f:
+            config = yaml.safe_load(f)
+    except IOError:
+        print("error loading config file")
+        sys.exit(1)
+    try:
+        access_token = config['access_token']
+        access_secret = config['access_secret']
+        consumer_key = config['consumer_key']
+        consumer_secret = config['consumer_secret']
+        users = config['users']
+        media_dir = config['media_dir']
+    except KeyError:
+        print("could not parse users file")
+        sys.exit(1)
 
 
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_secret)
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_secret)
 
-api = tweepy.API(auth)
+    api = tweepy.API(auth)
 
-tweepy_kwargs = {
-        'compression': False,
-        'tweet_mode': 'extended',
-        'exclude_replies': True,
-        'include_rts': False,
-        }
+    tweepy_kwargs = {
+            'compression': False,
+            'tweet_mode': 'extended',
+            'exclude_replies': True,
+            'include_rts': False,
+            }
 
-conn = sqlite3.connect('working/twitter_scraper.db')
-c = conn.cursor()
-c.execute('CREATE TABLE IF NOT EXISTS users (user text, last_id int64, UNIQUE (user))')
-c.execute('CREATE TABLE IF NOT EXISTS info (filename text, path text, user text, id int64, UNIQUE (filename, path))')
-c.execute('CREATE TABLE IF NOT EXISTS tweet_text (id int64, text text, UNIQUE (id))')
-c.execute('CREATE TABLE IF NOT EXISTS hashtags (hashtag text, id int64, UNIQUE (hashtag, id))')
+    conn = sqlite3.connect('working/twitter_scraper.db')
+    c = conn.cursor()
+    c.execute('CREATE TABLE IF NOT EXISTS users (user text, last_id int64, UNIQUE (user))')
+    c.execute('CREATE TABLE IF NOT EXISTS info (filename text, path text, user text, id int64, UNIQUE (filename, path))')
+    c.execute('CREATE TABLE IF NOT EXISTS tweet_text (id int64, text text, UNIQUE (id))')
+    c.execute('CREATE TABLE IF NOT EXISTS hashtags (hashtag text, id int64, UNIQUE (hashtag, id))')
 
-count = 0
+    count = 0
 
-for user in users:
-    user = user.lower()
-    # find the last read tweet
-    c.execute('SELECT last_id FROM users WHERE user=?', (user,))
-    last_id = c.fetchone()
-    first_id = None
-    if last_id is not None:
-        first_scan = False
-        last_id = last_id[0]
-    else:
-        first_scan = True
+    # download linked media for all users
+    for user in users:
+        user = user.lower()
+        # find the last read tweet
+        c.execute('SELECT last_id FROM users WHERE user=?', (user,))
+        last_id = c.fetchone()
+        first_id = None
+        if last_id is not None:
+            first_scan = False
+            last_id = last_id[0]
+        else:
+            first_scan = True
 
-    # fetch tweets
-    if first_scan:
-        tweets = api.user_timeline(user, **tweepy_kwargs)
-    else:
-        tweets = api.user_timeline(user, since_id=last_id+1, **tweepy_kwargs)
-
-    num_tweets = len(tweets)
-    while num_tweets > 0:
-        for tweet in tweets:
-            tweet = tweet._json
-            # update last tweet read
-            if last_id is None or tweet['id'] > last_id:
-                try:
-                    c.execute('INSERT INTO users VALUES (?,?)', (user, tweet['id']))
-                except sqlite3.IntegrityError:
-                    c.execute('UPDATE users SET last_id=(?) WHERE user=(?)', (tweet['id'], user))
-                last_id = tweet['id']
-                conn.commit()
-
-            # update first tweet read
-            if first_id is None or tweet['id'] < first_id:
-                first_id = tweet['id']
-
-            # download tweet media
-            download_tweet_media(tweet)
-
-        # fetch more tweets if available
+        # fetch tweets
         if first_scan:
-            tweets = api.user_timeline(user, max_id=first_id-1, **tweepy_kwargs)
+            tweets = api.user_timeline(user, **tweepy_kwargs)
         else:
             tweets = api.user_timeline(user, since_id=last_id+1, **tweepy_kwargs)
+
         num_tweets = len(tweets)
+        while num_tweets > 0:
+            for tweet in tweets:
+                tweet = tweet._json
+                # update last tweet read
+                if last_id is None or tweet['id'] > last_id:
+                    try:
+                        c.execute('INSERT INTO users VALUES (?,?)', (user, tweet['id']))
+                    except sqlite3.IntegrityError:
+                        c.execute('UPDATE users SET last_id=(?) WHERE user=(?)', (tweet['id'], user))
+                    last_id = tweet['id']
+                    conn.commit()
+
+                # update first tweet read
+                if first_id is None or tweet['id'] < first_id:
+                    first_id = tweet['id']
+
+                # download tweet media
+                download_tweet_media(tweet)
+
+            # fetch more tweets if available
+            if first_scan:
+                tweets = api.user_timeline(user, max_id=first_id-1, **tweepy_kwargs)
+            else:
+                tweets = api.user_timeline(user, since_id=last_id+1, **tweepy_kwargs)
+            num_tweets = len(tweets)
 
 

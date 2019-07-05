@@ -11,6 +11,7 @@ import sys
 import sqlite3
 
 def insert_phash(files):
+    """calculate the phash of a image"""
     i = files[0]
     filename = files[1]
 
@@ -25,6 +26,9 @@ def insert_phash(files):
 
 
 def gen_phash():
+    """calculate the phashes of all images, insert into a searchable database"""
+
+    # parse config.yaml
     try:
         dirpath = os.path.dirname(os.path.realpath(__file__))
         path = os.path.join(dirpath, 'config.yaml')
@@ -51,6 +55,7 @@ def gen_phash():
     c.execute('DROP TABLE IF EXISTS annoy')
     c.execute('CREATE TABLE IF NOT EXISTS annoy (filename text, path text, idx int32, UNIQUE (idx))')
 
+    # calc phash of all images
     files = enumerate(Path(media_dir).glob('*/*/*.jpg'))
     num_cpus = cpu_count() // 2
     if num_cpus == 0:
