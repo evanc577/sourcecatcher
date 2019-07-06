@@ -45,6 +45,8 @@ def download_media(url, path):
         return filename
 
     with requests.get(url, stream=True) as r:
+        if r.status_code != 200:
+            return None
         with open(path, 'wb') as f:
             print('\tdownloading to {}'.format(path))
             shutil.copyfileobj(r.raw, f)
@@ -74,6 +76,8 @@ def download_tweet_media(tweet):
                 # tweet contains pictures
                 path, date = mkdir(tweet['created_at'])
                 filename = download_media(media['media_url_https'], path)
+                if filename is None:
+                    return
                 write_exif_date(path, filename, date)
 
                 # add info
@@ -146,6 +150,7 @@ if __name__ == "__main__":
 
     # download linked media for all users
     for user in users:
+        print('Checking {} for new tweets'.format(user))
         user = user.lower()
         # find the last read tweet
         c.execute('SELECT last_id FROM users WHERE user=?', (user,))
