@@ -163,10 +163,15 @@ if __name__ == "__main__":
             first_scan = True
 
         # fetch tweets
-        if first_scan:
-            tweets = api.user_timeline(user, **tweepy_kwargs)
-        else:
-            tweets = api.user_timeline(user, since_id=last_id+1, **tweepy_kwargs)
+        try:
+            if first_scan:
+                tweets = api.user_timeline(user, **tweepy_kwargs)
+            else:
+                tweets = api.user_timeline(user, since_id=last_id+1, **tweepy_kwargs)
+        except tweepy.error.TweepError as e:
+            print("tweepy error {}".format(e))
+            continue
+
 
         num_tweets = len(tweets)
         while num_tweets > 0:
@@ -194,8 +199,12 @@ if __name__ == "__main__":
                 download_tweet_media(tweet)
 
             # fetch more tweets if available
-            if first_scan:
-                tweets = api.user_timeline(user, max_id=first_id-1, **tweepy_kwargs)
-            else:
-                tweets = api.user_timeline(user, since_id=last_id+1, **tweepy_kwargs)
+            try:
+                if first_scan:
+                    tweets = api.user_timeline(user, max_id=first_id-1, **tweepy_kwargs)
+                else:
+                    tweets = api.user_timeline(user, since_id=last_id+1, **tweepy_kwargs)
+            except tweepy.error.TweepError as e:
+                print("tweepy error {}".format(e))
+                continue
             num_tweets = len(tweets)
