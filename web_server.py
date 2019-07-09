@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 import requests
 import urllib
 import os
+import random
 
 UPLOAD_FOLDER = 'uploads'
 try:
@@ -21,14 +22,21 @@ app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024
 def upload():
     if request.method == 'POST':
         f = request.files['file']
-        filename = secure_filename(f.filename)
+        filename = '{:016x}'.format(random.randint(0, 1<<128))
         if f.filename == '':
             flash('No selected file')
             return redirect(request.url)
         path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         f.save(path)
         html = find_and_render('file', path)
-        os.remove(path)
+
+        # remove old files
+        uploads = ['{}/{}'.format(app.config['UPLOAD_FOLDER'], n) for n in os.listdir(app.config['UPLOAD_FOLDER'])]
+        print(uploads)
+        files = sorted(uploads, key=os.path.getctime)
+        if len(files) > 128:
+            os.remove(files[0])
+
         return html
     else:
         link = request.args.get('link')
