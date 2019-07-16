@@ -20,3 +20,5 @@ python gen_phashes.py
 
 cp $WORKING_DIR/twitter_scraper.db $LIVE_DIR
 cp $WORKING_DIR/phash_index.ann $LIVE_DIR
+
+./prune_backups.sh
