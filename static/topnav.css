@@ -84,6 +84,10 @@ form {
   text-align: left;
 }
 
+img.app_img {
+  width: 100%;
+}
+
 @media screen and (max-width: 800px) {
   h1 {
     font-size: 3em;

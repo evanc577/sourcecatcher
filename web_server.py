@@ -5,6 +5,8 @@ import requests
 import urllib
 import os
 import random
+import re
+from collections import OrderedDict
 
 UPLOAD_FOLDER = 'uploads'
 try:
@@ -49,6 +51,7 @@ def root():
     return find_and_render('url', link)
 
 def find_and_render(location, path):
+    app = False
     basename = None
     tweet_id = None
     direct_link = None
@@ -62,29 +65,42 @@ def find_and_render(location, path):
     if path is not None:
         try:
             if location == 'url':
-                found = map(list, zip(*find('url', path)))
+                domain = urllib.parse.urlparse(path).hostname
+                if 'dreamcatcher.candlemystar.com' == domain:
+                    source = requests.get(path).text
+                    x = re.findall(r"https://file\.candlemystar\.com/cache/post.*400x400\.\w+", source)
+                    files = []
+                    for url in x:
+                        temp = url.replace('cache/', '')
+                        temp = temp.replace('thumb-', '')
+                        temp = temp.replace('_400x400', '')
+                        files.append(temp)
+                    app = True
+                else:
+                    found = map(list, zip(*find('url', path)))
             elif location == 'file':
                 found = map(list, zip(*find('file', path)))
 
-            id_set = set()
-            count = 0
-            for candidate in found:
-                basename, tweet_id = candidate
-                if tweet_id in id_set:
-                    continue
+            if not app:
+                id_set = set()
+                count = 0
+                for candidate in found:
+                    basename, tweet_id = candidate
+                    if tweet_id in id_set:
+                        continue
 
-                direct_link = 'https://pbs.twimg.com/media/{}'.format(basename)
-                tweet_source = 'https://www.twitter.com/statuses/{}'.format(tweet_id)
+                    direct_link = 'https://pbs.twimg.com/media/{}'.format(basename)
+                    tweet_source = 'https://www.twitter.com/statuses/{}'.format(tweet_id)
 
-                if count == 0:
-                    embed = get_embed(tweet_id)
-                elif count == 1:
-                    embed2 = get_embed(tweet_id)
-                elif count == 2:
-                    embed3 = get_embed(tweet_id)
+                    if count == 0:
+                        embed = get_embed(tweet_id)
+                    elif count == 1:
+                        embed2 = get_embed(tweet_id)
+                    elif count == 2:
+                        embed3 = get_embed(tweet_id)
 
-                id_set.add(tweet_id)
-                count += 1
+                    id_set.add(tweet_id)
+                    count += 1
         except Exception as e:
             print(e)
 
@@ -97,9 +113,18 @@ def find_and_render(location, path):
             'num_photos': num_photos,
             'num_tweets': num_tweets,
             'mtime': mtime,
+            'app': app,
             }
     if location == 'url':
         kwargs['link'] = path
+
+    if app:
+        files = list(OrderedDict.fromkeys(files))
+        app_images = ''
+        for f in files:
+            app_images += f'<img class="app_img" src={f}>\n'
+        kwargs['app_images'] = app_images
+
 
     if path is not None:
         kwargs['nothing'] = True
