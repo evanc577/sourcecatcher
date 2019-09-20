@@ -111,8 +111,12 @@ p.message {
     padding: 0;
   }
 
+  input {
+    font-size: 1.25em;
+  }
+
   input[type=text] {
-    width: unset;
+    width: 100%;
   }
 
   input[type=file] {
