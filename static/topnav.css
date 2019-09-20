@@ -88,6 +88,10 @@ img.app_img {
   width: 100%;
 }
 
+p.message {
+  font-size: 0.75em;
+}
+
 @media screen and (max-width: 800px) {
   h1 {
     font-size: 3em;

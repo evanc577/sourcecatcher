@@ -7,6 +7,7 @@ import os
 import random
 import re
 from collections import OrderedDict
+from bs4 import BeautifulSoup
 
 UPLOAD_FOLDER = 'uploads'
 try:
@@ -67,6 +68,9 @@ def find_and_render(location, path):
             if location == 'url':
                 domain = urllib.parse.urlparse(path).hostname
                 if 'dreamcatcher.candlemystar.com' == domain:
+                    app = True
+
+                    # find all images from app post
                     source = requests.get(path).text
                     x = re.findall(r"https://file\.candlemystar\.com/cache/post.*400x400\.\w+", source)
                     files = []
@@ -75,7 +79,11 @@ def find_and_render(location, path):
                         temp = temp.replace('thumb-', '')
                         temp = temp.replace('_400x400', '')
                         files.append(temp)
-                    app = True
+
+                    # find post username and text
+                    parsed_html = BeautifulSoup(source, features='html.parser')
+                    app_poster = parsed_html.body.find('div', attrs={'class': 'card-name'}).text.strip()
+                    app_text = parsed_html.body.find('div', attrs={'class': 'card-text'}).text.strip()
                 else:
                     found = map(list, zip(*find('url', path)))
             elif location == 'file':
@@ -121,6 +129,8 @@ def find_and_render(location, path):
     if app:
         files = list(OrderedDict.fromkeys(files))
         app_images = ''
+        app_images += f'<h3>{app_poster}:</h3>\n'
+        app_images += f'<p>{app_text}<p>\n'
         for f in files:
             app_images += f'<img class="app_img" src={f}>\n'
         kwargs['app_images'] = app_images
