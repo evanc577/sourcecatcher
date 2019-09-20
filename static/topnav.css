@@ -66,6 +66,10 @@ input[type=text] {
   width: 400px;
 }
 
+input[type=submit] {
+  margin-top: 10px;
+}
+
 #or {
   text-align: center;
 }
