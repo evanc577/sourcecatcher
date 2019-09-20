@@ -60,18 +60,26 @@ def find_and_render(location, path):
     embed = None
     embed2 = None
     embed3 = None
+    error_msg = 'Error: could not analyze image'
 
     num_photos, num_tweets, mtime= stats()
+
 
     if path is not None:
         try:
             if location == 'url':
                 domain = urllib.parse.urlparse(path).hostname
                 if 'dreamcatcher.candlemystar.com' == domain:
-                    app = True
+                    # request DC app webpage
+                    response = requests.get(path)
+                    if response.status_code != 200:
+                        print(response.status_code)
+                        error_msg = 'Error: invalid Dreamcatcher app link'
+                        raise Exception('invalid DC app link')
 
                     # find all images from app post
-                    source = requests.get(path).text
+                    app = True
+                    source = response.text
                     x = re.findall(r"https://file\.candlemystar\.com/cache/post.*400x400\.\w+", source)
                     files = []
                     for url in x:
@@ -122,7 +130,9 @@ def find_and_render(location, path):
             'num_tweets': num_tweets,
             'mtime': mtime,
             'app': app,
+            'error_msg': error_msg,
             }
+
     if location == 'url':
         kwargs['link'] = path
 

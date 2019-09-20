@@ -61,6 +61,11 @@ form {
   text-align: center;
 }
 
+input[type=text] {
+  box-sizing: border-box;
+  width: 400px;
+}
+
 #or {
   text-align: center;
 }
@@ -86,6 +91,8 @@ form {
 
 img.app_img {
   width: 100%;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 p.message {
@@ -94,7 +101,8 @@ p.message {
 
 @media screen and (max-width: 800px) {
   h1 {
-    font-size: 3em;
+    font-size: 2em;
+    font-size: 10vw;
     text-align: center;
   }
 
@@ -106,6 +114,11 @@ p.message {
   input {
     font-size: 1.5em;
   }
+
+  input[type=text] {
+    width: unset;
+  }
+
 
   #link_submit_btn {
     margin-top: 0.5em;

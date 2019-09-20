@@ -19,9 +19,9 @@
       <div class="inputs">
         <form>
           {% if link %}
-            <input onClick="this.select();" type="text" name="link" size="24" placeholder="direct link to image" value="{{ link }}">
+            <input type="text" name="link" placeholder="link" value="{{ link }}">
           {% else %}
-            <input onClick="this.select();" type="text" name="link" size="24" placeholder="direct link to image">
+            <input type="text" name="link" placeholder="link">
           {% endif %}
           <input id="link_submit_btn" type="submit" value="submit">
         </form>
@@ -48,7 +48,7 @@
                   {% endif %}
                 {% endif %}
               {% else %}
-                <p style="text-align: center">Could not analyze image</p>
+              <p style="text-align: center">{{ error_msg|safe }}</p>
               {% endif %}
             {% endif %}
         </div>
