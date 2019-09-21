@@ -8,6 +8,7 @@ import random
 import re
 from collections import OrderedDict
 from bs4 import BeautifulSoup
+import tldextract
 
 UPLOAD_FOLDER = 'uploads'
 try:
@@ -50,8 +51,68 @@ def root():
     link = request.args.get('link')
     return find_and_render('url', link)
 
+def dc_app(path):
+    # request DC app webpage
+    try:
+        response = requests.get(path)
+    except requests.exceptions.MissingSchema:
+        path = 'https://' + path
+        response = requests.get(path)
+
+    if response.status_code != 200:
+        print(response.status_code)
+        error_msg = 'Error: Invalid Dreamcatcher app link'
+        raise Exception('invalid DC app link')
+
+    # find all images from app post
+    app = True
+    source = response.text
+    x = re.findall(r"https://file\.candlemystar\.com/cache/post/\d+/\d+/thumb-.*?\w+_400x400\.\w+", source)
+    files = []
+    for url in x:
+        temp = url.replace('cache/', '')
+        temp = temp.replace('thumb-', '')
+        temp = temp.replace('_400x400', '')
+        files.append(temp)
+
+    # find post username and text
+    parsed_html = BeautifulSoup(source, features='html.parser')
+    app_poster = parsed_html.body.find('div', attrs={'class': 'card-name'}).text.strip()
+    app_text = parsed_html.body.find('div', attrs={'class': 'card-text'}).text.strip()
+
+    return files, app_poster, app_text
+
+def dc_app_image(path):
+    # verify link
+    x = re.match(r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+$)", path)
+    if x is None:
+        error_msg = 'Error: Invalid Dreamcatcher app image link, or image is already full size'
+        raise Exception('Error: Invalid Dreamcatcher app image link')
+    else:
+        # get full size image
+        image_link = path.replace('cache/', '')
+        image_link = image_link.replace('thumb-', '')
+        image_link = image_link.replace(x.groups()[2], '')
+
+        # request image link
+        try:
+            response = requests.get(image_link)
+        except requests.exceptions.MissingSchema:
+            image_link = 'https://' + image_link
+            response = requests.get(image_link)
+
+        if response.status_code == 200:
+            app_direct_image = True
+        else:
+            error_msg = 'Error: Image could not be found'
+            raise Exception('invalid url')
+
+        return image_link
+
+
 def find_and_render(location, path):
     app = False
+    app_direct_image = False
     basename = None
     tweet_id = None
     direct_link = None
@@ -59,7 +120,7 @@ def find_and_render(location, path):
     embed = None
     embed2 = None
     embed3 = None
-    error_msg = 'Error: could not analyze image'
+    error_msg = 'Error: Could not analyze image'
 
     num_photos, num_tweets, mtime= stats()
 
@@ -67,36 +128,25 @@ def find_and_render(location, path):
     if path is not None:
         try:
             if location == 'url':
-                domain = urllib.parse.urlparse(path).hostname
-                if 'dreamcatcher.candlemystar.com' == domain:
-                    # request DC app webpage
-                    response = requests.get(path)
-                    if response.status_code != 200:
-                        print(response.status_code)
-                        error_msg = 'Error: invalid Dreamcatcher app link'
-                        raise Exception('invalid DC app link')
+                extract = tldextract.extract(path)
 
-                    # find all images from app post
+                if extract.subdomain == 'dreamcatcher' and \
+                        extract.domain == 'candlemystar' and \
+                        extract.suffix == 'com':
+                    files, app_poster, app_text = dc_app(path)
                     app = True
-                    source = response.text
-                    x = re.findall(r"https://file\.candlemystar\.com/cache/post.*400x400\.\w+", source)
-                    files = []
-                    for url in x:
-                        temp = url.replace('cache/', '')
-                        temp = temp.replace('thumb-', '')
-                        temp = temp.replace('_400x400', '')
-                        files.append(temp)
-
-                    # find post username and text
-                    parsed_html = BeautifulSoup(source, features='html.parser')
-                    app_poster = parsed_html.body.find('div', attrs={'class': 'card-name'}).text.strip()
-                    app_text = parsed_html.body.find('div', attrs={'class': 'card-text'}).text.strip()
+                elif extract.subdomain == 'file' and \
+                        extract.domain == 'candlemystar' and \
+                        extract.suffix == 'com':
+                    image_link = dc_app_image(path)
+                    app_direct_image = True
                 else:
                     found = map(list, zip(*find('url', path)))
+
             elif location == 'file':
                 found = map(list, zip(*find('file', path)))
 
-            if not app:
+            if not app and not app_direct_image:
                 id_set = set()
                 count = 0
                 for candidate in found:
@@ -132,6 +182,7 @@ def find_and_render(location, path):
             'num_tweets': num_tweets,
             'mtime': mtime,
             'app': app,
+            'app_direct_image': app_direct_image,
             'error_msg': error_msg,
             }
 
@@ -147,11 +198,14 @@ def find_and_render(location, path):
             app_images += f'<img class="app_img" src={f}>\n'
         kwargs['app_images'] = app_images
 
+    if app_direct_image:
+        app_images = f'<img class="app_img" src={image_link}>\n'
+        kwargs['app_images'] = app_images
 
     if path is not None:
         kwargs['nothing'] = True
 
-    return render_template('test.html', **kwargs)
+    return render_template('sourcecatcher.html', **kwargs)
 
 def add_result_title(html, tweet_source):
     header = '<div class="result">\n<div class="result_title">\n<a href={0} ">{0}</a>'.format(tweet_source)
