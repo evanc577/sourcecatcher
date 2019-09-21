@@ -48,7 +48,9 @@
                   {% endif %}
                 {% endif %}
               {% else %}
-              <p style="text-align: center">{{ error_msg|safe }}</p>
+                <div class="error">
+                  {{ error_msg|safe }}
+                </div>
               {% endif %}
             {% endif %}
         </div>

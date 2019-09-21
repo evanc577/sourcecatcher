@@ -35,7 +35,6 @@ def upload():
 
         # remove old files
         uploads = ['{}/{}'.format(app.config['UPLOAD_FOLDER'], n) for n in os.listdir(app.config['UPLOAD_FOLDER'])]
-        print(uploads)
         files = sorted(uploads, key=os.path.getctime)
         if len(files) > 128:
             os.remove(files[0])
@@ -117,6 +116,9 @@ def find_and_render(location, path):
 
                     id_set.add(tweet_id)
                     count += 1
+
+                if count == 0:
+                    error_msg = 'No matches found'
         except Exception as e:
             print(e)
 

@@ -56,7 +56,7 @@ def find(location, path):
     # look up the location of the match and its tweet info
     first = True
     for idx, score in map(list, zip(*results)):
-        if not first and score > 8:
+        if score > 8:
             break
         first = False
 

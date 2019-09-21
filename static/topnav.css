@@ -103,6 +103,15 @@ p.message {
   font-size: 0.75em;
 }
 
+.error {
+  text-align: center;
+  color: #D8000C;
+  background-color: #FFD2D2;
+  margin-top: 20px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
 @media screen and (max-width: 800px) {
   h1 {
     font-size: 2em;
