@@ -110,6 +110,7 @@ p.message {
   margin-top: 20px;
   padding-top: 10px;
   padding-bottom: 10px;
+  border-radius: 5px;
 }
 
 @media screen and (max-width: 800px) {
