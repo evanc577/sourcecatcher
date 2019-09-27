@@ -67,16 +67,20 @@ def dc_app(path):
     # find all images from app post
     app = True
     source = response.text
-    x = re.findall(r"https://file\.candlemystar\.com/cache/post/\d+/\d+/thumb-.*?\w+_400x400\.\w+", source)
+    parsed_html = BeautifulSoup(source, features='html.parser')
+    images_html = ''.join([str(h) for h in parsed_html.body.find_all('div', attrs={'class': 'img-box'})])
+    x = re.findall(r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+)", images_html)
+
+    # create urls for full-size images
     files = []
     for url in x:
-        temp = url.replace('cache/', '')
+        temp = url[0]
+        temp = temp.replace('cache/', '')
         temp = temp.replace('thumb-', '')
-        temp = temp.replace('_400x400', '')
+        temp = temp.replace(url[2], '')
         files.append(temp)
 
     # find post username and text
-    parsed_html = BeautifulSoup(source, features='html.parser')
     app_poster = parsed_html.body.find('div', attrs={'class': 'card-name'}).text.strip()
     app_text = parsed_html.body.find('div', attrs={'class': 'card-text'}).text.strip()
 
