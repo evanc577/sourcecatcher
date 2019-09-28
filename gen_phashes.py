@@ -10,19 +10,18 @@ import numpy as np
 import sys
 import sqlite3
 
-def insert_phash(files):
+def calc_phash(files):
     """calculate the phash of a image"""
     i = files[0]
-    filename = files[1]
+    filename = os.path.join(files[1][0], files[1][1])
 
     phash = imagehash.phash(Image.open(filename))
-    phash_arr = phash.hash.flatten()
     print('file #{:08d}, phash: {:08x}, filename: {}'.format(i, int(str(phash), 16), filename))
 
     basename = os.path.basename(filename)
     dirname = os.path.dirname(filename)
 
-    return phash_arr, basename, dirname, i
+    return basename, dirname, i, '{:08x}'.format(int(str(phash), 16))
 
 
 def gen_phash():
@@ -52,18 +51,48 @@ def gen_phash():
 
     conn = sqlite3.connect('working/twitter_scraper.db')
     c = conn.cursor()
-    c.execute('DROP TABLE IF EXISTS annoy')
-    c.execute('CREATE TABLE IF NOT EXISTS annoy (filename text, path text, idx int32, UNIQUE (idx))')
+    c.execute('CREATE TABLE IF NOT EXISTS hashes (filename text, path text, idx int32, hash text, UNIQUE (idx))')
+    c.execute('SELECT path, filename FROM hashes')
+    done_hashes = set(c.fetchall())
+    print('current hashed files: {}'.format(len(done_hashes)))
+
+    # get next starting index
+    c.execute('SELECT idx FROM hashes ORDER BY idx DESC LIMIT 1')
+    cur_max_id = c.fetchone()
+    if cur_max_id is None:
+        next_id = 0
+    else:
+        next_id = cur_max_id[0] + 1
+
+    try:
+        num_cpus = config['cpus']
+    except KeyError:
+        num_cpus = cpu_count()
 
     # calc phash of all images
-    files = enumerate(Path(media_dir).glob('*/*/*.jpg'))
-    num_cpus = cpu_count() // 2
-    if num_cpus == 0:
-        num_cpus = 1
+    c.execute('SELECT path, filename FROM info')
+    files = set(c.fetchall()) - done_hashes
+    print('files to hash: {}'.format(len(files)))
+    files = enumerate(files, next_id)
     with Pool(processes=num_cpus) as pool:
-        for r in pool.imap(insert_phash, files, chunksize=64):
-            index.add_item(r[3], r[0])
-            c.execute('INSERT INTO annoy VALUES (?,?,?)', (r[1], r[2], r[3]))
+        for r in pool.imap(calc_phash, files, chunksize=64):
+            try:
+                c.execute('INSERT INTO hashes VALUES (?,?,?,?)', (r[0], r[1], r[2], r[3]))
+            except sqlite3.IntegrityError:
+                pass
+
+    # insert hashes into annoy
+    c.execute('SELECT idx,hash from hashes')
+    hashes = c.fetchall()
+    for h in hashes:
+        # calculate hash array
+        h_int = int(h[1], 16)
+        h_arr = [None] * 64
+        for i in range(64):
+            h_arr[63 - i] = h_int & (1 << i) != 0
+
+        # insert hash into annoy
+        index.add_item(h[0], h_arr)
 
     conn.commit()
 

@@ -16,7 +16,7 @@ def find(location, path):
 
     Given a path or a url to an image, returns the closest matches
     (phash hamming distance)
-    
+
     Arguments:
     location: 'url' or 'path'
     path: the actual url or path to the image
@@ -61,7 +61,7 @@ def find(location, path):
         first = False
 
         print('score: {}'.format(score))
-        c.execute('SELECT path, filename FROM annoy WHERE idx=(?)', (idx,))
+        c.execute('SELECT path, filename FROM hashes WHERE idx=(?)', (idx,))
         dirname, basename = c.fetchone()
         fullpath = os.path.join(dirname, basename)
         c.execute('SELECT id FROM info WHERE filename=(?) AND path=(?)', (basename, dirname))
