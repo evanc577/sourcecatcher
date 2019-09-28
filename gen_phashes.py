@@ -12,7 +12,7 @@ import sqlite3
 
 def calc_phash(files):
     """calculate the phash of a image"""
-    i = files[0]
+    i = files[0]    # annoy index
     filename = os.path.join(files[1][0], files[1][1])
 
     phash = imagehash.phash(Image.open(filename))
@@ -49,9 +49,12 @@ def gen_phash():
 
     index = AnnoyIndex(64, metric='hamming')
 
+    # set up database
     conn = sqlite3.connect('working/twitter_scraper.db')
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS hashes (filename text, path text, idx int32, hash text, UNIQUE (idx))')
+
+    # find previously hashed files
     c.execute('SELECT path, filename FROM hashes')
     done_hashes = set(c.fetchall())
     print('current hashed files: {}'.format(len(done_hashes)))
@@ -69,7 +72,7 @@ def gen_phash():
     except KeyError:
         num_cpus = cpu_count()
 
-    # calc phash of all images
+    # calculate phash of new images
     c.execute('SELECT path, filename FROM info')
     files = set(c.fetchall()) - done_hashes
     print('files to hash: {}'.format(len(files)))
