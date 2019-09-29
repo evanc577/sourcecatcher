@@ -135,8 +135,9 @@ if __name__ == "__main__":
     tweepy_kwargs = {
             'compression': False,
             'tweet_mode': 'extended',
-            'exclude_replies': True,
-            # 'include_rts': False,
+            'count': 200,
+            'exclude_replies': False,
+            'include_rts': True,
             }
 
     conn = sqlite3.connect('working/twitter_scraper.db')
