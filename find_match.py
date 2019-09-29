@@ -9,6 +9,7 @@ import requests
 import sqlite3
 import os
 import time
+import functools
 from datetime import datetime
 
 def find(location, path):
@@ -44,18 +45,17 @@ def find(location, path):
     phash = imagehash.phash(img)
     phash_arr = phash.hash.flatten()
 
-    # find the closest mateches
-    results = index.get_nns_by_vector(phash_arr, 16, include_distances=True)
+    # find the closest matches
+    annoy_results = index.get_nns_by_vector(phash_arr, 16, include_distances=True)
 
     conn = sqlite3.connect('live/twitter_scraper.db')
     c = conn.cursor()
 
-    basenames = []
-    tweet_ids = []
+    results = []
 
     # look up the location of the match and its tweet info
     first = True
-    for idx, score in map(list, zip(*results)):
+    for idx, score in map(list, zip(*annoy_results)):
         if score > 8:
             break
         first = False
@@ -74,11 +74,28 @@ def find(location, path):
         print('source tweet: https://www.twitter.com/statuses/{}'.format(tweet_id))
         print()
 
-        basenames.append(basename)
-        tweet_ids.append(tweet_id)
+        results.append((score, tweet_id, basename))
 
     conn.close()
-    return basenames, tweet_ids
+    
+    # sort results
+    results = sorted(results, key=functools.cmp_to_key(results_cmp))
+    print(results)
+
+    return results
+
+def results_cmp(a, b):
+    if a[0] > b[0]:
+        return 1
+    elif a[0] < b[0]:
+        return -1
+    else:
+        if a[1] > b[1]:
+            return 1
+        elif a[1] < b[1]:
+            return -1
+        else:
+            return 0
 
 def stats():
     """returns stats for the database"""

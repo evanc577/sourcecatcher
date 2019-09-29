@@ -41,12 +41,6 @@
             {% else %}
               {% if embed %}
                 {{ embed|safe }}
-                {% if embed2 %}
-                  {{ embed2|safe }}
-                  {% if embed3 %}
-                    {{ embed3|safe }}
-                  {% endif %}
-                {% endif %}
               {% else %}
                 <div class="error">
                   {{ error_msg|safe }}

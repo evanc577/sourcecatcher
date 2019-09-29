@@ -122,8 +122,6 @@ def find_and_render(location, path):
     direct_link = None
     tweet_source = None
     embed = None
-    embed2 = None
-    embed3 = None
     error_msg = 'Error: Could not analyze image'
 
     num_photos, num_tweets, mtime= stats()
@@ -145,16 +143,16 @@ def find_and_render(location, path):
                     image_link = dc_app_image(path)
                     app_direct_image = True
                 else:
-                    found = map(list, zip(*find('url', path)))
+                    found = find('url', path)
 
             elif location == 'file':
-                found = map(list, zip(*find('file', path)))
+                found = find('file', path)
 
             if not app and not app_direct_image:
                 id_set = set()
                 count = 0
                 for candidate in found:
-                    basename, tweet_id = candidate
+                    score, tweet_id, basename = candidate
                     if tweet_id in id_set:
                         continue
 
@@ -163,10 +161,8 @@ def find_and_render(location, path):
 
                     if count == 0:
                         embed = get_embed(tweet_id)
-                    elif count == 1:
-                        embed2 = get_embed(tweet_id)
-                    elif count == 2:
-                        embed3 = get_embed(tweet_id)
+                    else:
+                        embed += get_embed(tweet_id)
 
                     id_set.add(tweet_id)
                     count += 1
@@ -180,8 +176,6 @@ def find_and_render(location, path):
             'direct_link': direct_link,
             'tweet_source': tweet_source,
             'embed': embed,
-            'embed2': embed2,
-            'embed3': embed3,
             'num_photos': num_photos,
             'num_tweets': num_tweets,
             'mtime': mtime,
@@ -223,7 +217,7 @@ def get_embed(tweet_id):
     get_url = 'https://publish.twitter.com/oembed?url={}'.format(url)
     try:
         r = requests.get(url=get_url)
-        html = r.json()['html']
+        html = r.json()['html'] + '\n'
         return html
     except:
         return None
