@@ -9,6 +9,9 @@ import re
 from collections import OrderedDict
 from bs4 import BeautifulSoup
 import tldextract
+import yaml
+import tweepy
+from html import escape
 
 UPLOAD_FOLDER = 'uploads'
 try:
@@ -21,6 +24,37 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024
 
+# parse config.yaml
+try:
+    dirpath = os.path.dirname(os.path.realpath(__file__))
+    path = os.path.join(dirpath, 'config.yaml')
+    with open(path) as f:
+        config = yaml.safe_load(f)
+except IOError:
+    print("error loading config file")
+    sys.exit(1)
+try:
+    access_token = config['access_token']
+    access_secret = config['access_secret']
+    consumer_key = config['consumer_key']
+    consumer_secret = config['consumer_secret']
+    users = config['users']
+    media_dir = config['media_dir']
+except KeyError:
+    print("could not parse users file")
+    sys.exit(1)
+
+auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token, access_secret)
+
+api = tweepy.API(auth)
+
+tweepy_kwargs = {
+        'compression': False,
+        'tweet_mode': 'extended',
+        'trim_user': False,
+        'include_entities': True,
+        }
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -119,8 +153,6 @@ def find_and_render(location, path):
     app_direct_image = False
     basename = None
     tweet_id = None
-    direct_link = None
-    tweet_source = None
     embed = None
     error_msg = 'Error: Could not analyze image'
 
@@ -156,13 +188,10 @@ def find_and_render(location, path):
                     if tweet_id in id_set:
                         continue
 
-                    direct_link = 'https://pbs.twimg.com/media/{}'.format(basename)
-                    tweet_source = 'https://www.twitter.com/statuses/{}'.format(tweet_id)
-
                     if count == 0:
-                        embed = get_embed(tweet_id)
+                        embed = get_custom_embed(tweet_id)
                     else:
-                        embed += get_embed(tweet_id)
+                        embed += get_custom_embed(tweet_id)
 
                     id_set.add(tweet_id)
                     count += 1
@@ -173,8 +202,6 @@ def find_and_render(location, path):
             print(e)
 
     kwargs = {
-            'direct_link': direct_link,
-            'tweet_source': tweet_source,
             'embed': embed,
             'num_photos': num_photos,
             'num_tweets': num_tweets,
@@ -209,6 +236,73 @@ def add_result_title(html, tweet_source):
     header = '<div class="result">\n<div class="result_title">\n<a href={0} ">{0}</a>'.format(tweet_source)
     footer = '\n</div>'
     return header + html + footer
+
+def get_custom_embed(tweet_id):
+    """
+    Create a custom embedded tweet
+    """
+    try:
+        # get tweet contents
+        status = api.get_status(tweet_id, **tweepy_kwargs)
+
+        # process tweet text
+        display_range = status._json['display_text_range']
+        text = status._json['full_text'][display_range[0]:display_range[1]]
+        text_html = escape(text).replace('\n', '<br />')
+
+        # process name
+        screen_name = status._json['user']['screen_name']
+        identity_name = status._json['user']['name']
+        profile_image = status._json['user']['profile_image_url_https']
+
+        # process time
+        ts = status._json['created_at']
+        print(ts)
+
+        # process tweet images
+        media = status._json['extended_entities']['media']
+        num_media = len(media)
+        images_html = ""
+        for m in media:
+            url = m['media_url_https']
+            images_html += f'<div class="image_container num_media{num_media}">\n<img alt="Twitter image" src="{url}">\n</div>\n'
+
+        html = f'''
+<a class="tweet_embed" target="_blank" rel="noopener noreferrer" title="View on Twitter" href="https://twitter.com/{screen_name}/status/{tweet_id}">
+  <img class="twitter_logo" src="static/Twitter_Logo_Blue.svg">
+  <div class="author">
+    <img class="avatar" alt="Avatar" src="{profile_image}">
+    <div class="name_container">
+      <span class="identity_name">
+        {identity_name}
+      </span>
+      <span class="screen_name">
+        @{screen_name}
+      </span>
+    </div>
+  </div>
+  <div class="datetime">
+    <script>datetime = new Date("{ts}");
+      datestr = datetime.toLocaleDateString();
+      timestr = datetime.toLocaleTimeString();
+      datetimestr = timestr + " - " + datestr;
+      document.write(datetimestr)
+    </script>
+  </div>
+  <div class="tweet_text">
+    {text_html}
+  </div>
+  <div class="tweet_images">
+    {images_html}
+  </div>
+</a>
+'''
+
+        return html
+    except:
+        # custom embed failed for some reason, try Twitter's official embed
+        print("Error creating custom embedded tweet")
+        return get_embed(tweet_id)
 
 def get_embed(tweet_id):
     """get html for an embedded tweet"""
