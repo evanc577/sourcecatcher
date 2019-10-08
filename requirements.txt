@@ -1,6 +1,6 @@
 annoy
 Flask
-gunicorn
+gunicorn[gevent]
 ImageHash
 piexif
 Pillow
