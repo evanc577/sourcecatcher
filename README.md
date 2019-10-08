@@ -69,7 +69,7 @@ User=YOUR_USER
 Group=www-data
 WorkingDirectory=/PATH/TO/sourcecatcher
 Environment="PATH=/PATH/TO/sourcecatcher/sourcecatcher_venv/bin"
-ExecStart=/PATH/TO/sourcecatcher/sourcecatcher_venv/bin/gunicorn -w 9 -k gevent -b unix:sourcecatcher.sock -m 007 wsgi:app
+ExecStart=/PATH/TO/sourcecatcher/sourcecatcher_venv/bin/gunicorn -w 9 -k gevent --log-file=- -b unix:sourcecatcher.sock -m 007 wsgi:app
 
 [Install]
 WantedBy=multi-user.target
