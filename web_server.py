@@ -257,7 +257,6 @@ def get_custom_embed(tweet_id):
 
         # process time
         ts = status._json['created_at']
-        print(ts)
 
         # process tweet images
         media = status._json['extended_entities']['media']
@@ -299,9 +298,9 @@ def get_custom_embed(tweet_id):
 '''
 
         return html
-    except:
+    except Exception as e:
         # custom embed failed for some reason, try Twitter's official embed
-        print("Error creating custom embedded tweet")
+        print(f"Error creating custom embedded tweet: {e}")
         return get_embed(tweet_id)
 
 def get_embed(tweet_id):
