@@ -270,7 +270,7 @@ def get_custom_embed(tweet_id, score):
 
         html = f'''
 <a class="tweet_embed" target="_blank" rel="noopener noreferrer" title="View on Twitter" href="https://twitter.com/{screen_name}/status/{tweet_id}">
-  <div class="match_score">Score: {score}</div>
+  <div class="match_score">Match Score: {score}</div>
   <img class="twitter_logo" src="static/Twitter_Logo_Blue.svg">
   <div class="author">
     <img class="avatar" alt="Avatar" src="{profile_image}">

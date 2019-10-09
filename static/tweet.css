@@ -9,6 +9,7 @@ a.tweet_embed {
 
   border: 1px solid lightgrey;
   border-radius: 5px;
+  color: black;
 }
 
 a.tweet_embed:hover {
