@@ -188,10 +188,12 @@ def find_and_render(location, path):
                     if tweet_id in id_set:
                         continue
 
+                    score_percent = calc_score_percent(score)
+
                     if count == 0:
-                        embed = get_custom_embed(tweet_id)
+                        embed = get_custom_embed(tweet_id, score_percent)
                     else:
-                        embed += get_custom_embed(tweet_id)
+                        embed += get_custom_embed(tweet_id, score_percent)
 
                     id_set.add(tweet_id)
                     count += 1
@@ -237,7 +239,7 @@ def add_result_title(html, tweet_source):
     footer = '\n</div>'
     return header + html + footer
 
-def get_custom_embed(tweet_id):
+def get_custom_embed(tweet_id, score):
     """
     Create a custom embedded tweet
     """
@@ -268,6 +270,7 @@ def get_custom_embed(tweet_id):
 
         html = f'''
 <a class="tweet_embed" target="_blank" rel="noopener noreferrer" title="View on Twitter" href="https://twitter.com/{screen_name}/status/{tweet_id}">
+  <div class="match_score">Score: {score}</div>
   <img class="twitter_logo" src="static/Twitter_Logo_Blue.svg">
   <div class="author">
     <img class="avatar" alt="Avatar" src="{profile_image}">
@@ -314,6 +317,13 @@ def get_embed(tweet_id):
         return html
     except:
         return None
+
+def calc_score_percent(score):
+    """calculate the percentage score, where 100 is best and 0 is worst"""
+    if score > 32:
+        return 0
+
+    return int(100 - 100 * score / 32)
 
 def remove_scripts(html):
     """experimental: remove scripts from html"""

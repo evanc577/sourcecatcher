@@ -53,16 +53,17 @@ a.tweet_embed div.author div.name_container {
 a.tweet_embed div.author div.name_container span.identity_name {
   color: black;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 1.1em;
 }
 
 a.tweet_embed div.author div.name_container span.screen_name {
   color: #697882;
-  font-size: 14px;
+  font-size: 0.9em;
 }
 
 a.tweet_embed div.tweet_text {
   float: none;
+  font-size: 1em;
   color: #1c2022;
   margin: 20px;
 }
@@ -103,9 +104,15 @@ a.tweet_embed div.tweet_images div.image_container img {
 }
 
 a.tweet_embed div.datetime {
-  font-size: 14px;
+  font-size: 0.9em;
   margin-left: 20px;
   margin-right: 20px;
   margin-top: 10px;
   color: #697882;
+}
+
+a.tweet_embed div.match_score {
+	margin: 20px 20px 0px 20px;
+	font-size: 1em;
+	font-weight: 200;
 }
