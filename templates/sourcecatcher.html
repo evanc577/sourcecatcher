@@ -20,9 +20,9 @@
       <div class="inputs">
         <form action="/">
           {% if link %}
-            <input type="text" name="link" placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ link }}">
+            <input type="text" name="link" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ link }}">
           {% else %}
-            <input type="text" name="link" placeholder="https://i.imgur.com/QQDz93b.jpg">
+            <input type="text" name="link" required placeholder="https://i.imgur.com/QQDz93b.jpg">
           {% endif %}
           <input id="link_submit_btn" type="submit" value="submit">
         </form>
