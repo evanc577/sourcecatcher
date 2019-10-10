@@ -114,6 +114,11 @@ p.message {
   border-radius: 5px;
 }
 
+.error_code {
+  color: #A0000C;
+  font-size: 1.5em;
+}
+
 @media screen and (max-width: 800px) {
   h1 {
     font-size: 2em;

@@ -1,6 +1,8 @@
 from flask import Flask, flash, redirect, render_template, request, session, abort
 from find_match import find, stats
+from sc_exceptions import *
 from werkzeug.utils import secure_filename
+from werkzeug.exceptions import HTTPException
 import requests
 import urllib
 import os
@@ -56,6 +58,44 @@ tweepy_kwargs = {
         'include_entities': True,
         }
 
+@app.errorhandler(HTTPException)
+def handle_exception(e):
+    """Generic http error handler"""
+    print(e)
+    num_photos, num_tweets, mtime= stats()
+
+    error_msg = f'<div class="error_code">{e.code} {e.name}</div><br>{e.description}'
+    kwargs = {
+            'embed': None,
+            'num_photos': num_photos,
+            'num_tweets': num_tweets,
+            'mtime': mtime,
+            'app': False,
+            'app_direct_image': False,
+            'results': True,
+            'error_msg': error_msg,
+            }
+    return render_template('sourcecatcher.html', **kwargs)
+
+@app.errorhandler(413)
+def entity_too_large(e):
+    """Error page if uploaded file is too large"""
+
+    num_photos, num_tweets, mtime= stats()
+
+    kwargs = {
+            'embed': None,
+            'num_photos': num_photos,
+            'num_tweets': num_tweets,
+            'mtime': mtime,
+            'app': False,
+            'app_direct_image': False,
+            'results': True,
+            'error_msg': EntityTooLarge().__str__(),
+            }
+    return render_template('sourcecatcher.html', **kwargs)
+
+
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     if request.method == 'POST':
@@ -88,15 +128,15 @@ def root():
 def dc_app(path):
     # request DC app webpage
     try:
-        response = requests.get(path)
+        response = requests.get(path, timeout=30)
     except requests.exceptions.MissingSchema:
         path = 'https://' + path
-        response = requests.get(path)
+        response = requests.get(path, timeout=30)
 
     if response.status_code != 200:
         print(response.status_code)
         error_msg = 'Error: Invalid Dreamcatcher app link'
-        raise Exception('invalid DC app link')
+        raise InvalidDCAppLink
 
     # find all images from app post
     app = True
@@ -124,8 +164,7 @@ def dc_app_image(path):
     # verify link
     x = re.match(r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+$)", path)
     if x is None:
-        error_msg = 'Error: Invalid Dreamcatcher app image link, or image is already full size'
-        raise Exception('Error: Invalid Dreamcatcher app image link')
+        raise FullSizeDCAppImage
     else:
         # get full size image
         image_link = path.replace('cache/', '')
@@ -134,16 +173,16 @@ def dc_app_image(path):
 
         # request image link
         try:
-            response = requests.get(image_link)
+            response = requests.get(image_link, timeout=30)
         except requests.exceptions.MissingSchema:
             image_link = 'https://' + image_link
-            response = requests.get(image_link)
+            response = requests.get(image_link, timeout=30)
 
         if response.status_code == 200:
             app_direct_image = True
         else:
             error_msg = 'Error: Image could not be found'
-            raise Exception('invalid url')
+            raise InvalidDCAppLink
 
         return image_link
 
@@ -154,7 +193,7 @@ def find_and_render(location, path):
     basename = None
     tweet_id = None
     embed = None
-    error_msg = 'Error: Could not analyze image'
+    error_msg = None
 
     num_photos, num_tweets, mtime= stats()
 
@@ -191,16 +230,22 @@ def find_and_render(location, path):
                     score_percent = calc_score_percent(score)
 
                     if count == 0:
-                        embed = get_custom_embed(tweet_id, score_percent)
-                    else:
-                        embed += get_custom_embed(tweet_id, score_percent)
+                        embed = ""
+
+                    embed += get_custom_embed(tweet_id, score_percent)
 
                     id_set.add(tweet_id)
                     count += 1
 
                 if count == 0:
-                    error_msg = 'No matches found'
+                    raise NoMatchesFound
+
+        except SCError as e:
+            error_msg = str(e)
+            print(e)
+
         except Exception as e:
+            error_msg = "An unknown error occurred"
             print(e)
 
     kwargs = {
@@ -230,7 +275,7 @@ def find_and_render(location, path):
         kwargs['app_images'] = app_images
 
     if path is not None:
-        kwargs['nothing'] = True
+        kwargs['results'] = True
 
     return render_template('sourcecatcher.html', **kwargs)
 
@@ -311,12 +356,10 @@ def get_embed(tweet_id):
     tweet_source = 'https://www.twitter.com/a/status/{}'.format(tweet_id)
     url = urllib.parse.quote(tweet_source, safe='')
     get_url = 'https://publish.twitter.com/oembed?url={}'.format(url)
-    try:
-        r = requests.get(url=get_url)
-        html = r.json()['html'] + '\n'
-        return html
-    except:
-        return None
+
+    r = requests.get(url=get_url, timeout=30)
+    html = r.json()['html'] + '\n'
+    return html
 
 def calc_score_percent(score):
     """calculate the percentage score, where 100 is best and 0 is worst"""
