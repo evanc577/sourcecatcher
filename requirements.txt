@@ -1,5 +1,6 @@
 annoy
 Flask
+Flask-Limiter
 gunicorn[gevent]
 ImageHash
 piexif

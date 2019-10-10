@@ -1,4 +1,6 @@
 from flask import Flask, flash, redirect, render_template, request, session, abort
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from find_match import find, stats
 from sc_exceptions import *
 from werkzeug.utils import secure_filename
@@ -25,6 +27,13 @@ ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024
+
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["10 per minute", "1 per second"],
+)
+
 
 # parse config.yaml
 try:
@@ -59,6 +68,7 @@ tweepy_kwargs = {
         }
 
 @app.errorhandler(HTTPException)
+@limiter.exempt
 def handle_exception(e):
     """Generic http error handler"""
     print(e)
@@ -78,6 +88,7 @@ def handle_exception(e):
     return render_template('sourcecatcher.html', **kwargs)
 
 @app.errorhandler(413)
+@limiter.exempt
 def entity_too_large(e):
     """Error page if uploaded file is too large"""
 
