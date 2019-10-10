@@ -27,11 +27,60 @@ def find(location, path):
     path: the actual url or path to the image
     """
 
-
+    # load database and annoy index
     index = AnnoyIndex(64, metric='hamming')
     index.load('live/phash_index.ann')
+    conn = sqlite3.connect('live/twitter_scraper.db')
+    c = conn.cursor()
 
-    # get the requested image
+    # load the requested image
+    img = load_image(location, path)
+
+    start_time = time.time()
+
+    # get the image's phash
+    phash = imagehash.phash(img)
+    phash_arr = phash.hash.flatten()
+
+    # find the closest matches
+    n = 16
+    n_trees = index.get_n_trees()
+    ann_start_time = time.time()
+    annoy_results = index.get_nns_by_vector(phash_arr, n, include_distances=True, search_k=100*n*n_trees)
+    ann_end_time = time.time()
+
+    # look up the location of the match and its tweet info
+    results = []
+    for idx, score in map(list, zip(*annoy_results)):
+        # only keep close enough matches
+        if score > 8:
+            break
+
+        # find respective image in database
+        c.execute('SELECT path, filename FROM hashes WHERE idx=(?)', (idx,))
+        dirname, basename = c.fetchone()
+        fullpath = os.path.join(dirname, basename)
+        c.execute('SELECT id FROM info WHERE filename=(?) AND path=(?)', (basename, dirname))
+        tweet_id = c.fetchone()
+        tweet_id = tweet_id[0]
+        results.append((score, tweet_id, basename))
+
+    conn.close()
+
+    # sort results
+    results = sorted(results, key=functools.cmp_to_key(results_cmp))
+
+    end_time = time.time()
+
+    print(results)
+    print(f"total search time: {end_time - start_time:06f} seconds")
+    print(f"annoy search time: {ann_end_time - ann_start_time:06f} seconds")
+
+    return results
+
+def load_image(location, path):
+    """Load the user requested image"""
+
     if location == 'url':
         MAX_DOWNLOAD = 15 * 1024 * 1024
         try:
@@ -69,50 +118,10 @@ def find(location, path):
         except IOError as e:
             raise InvalidImage
 
-    # get the image's phash
-    phash = imagehash.phash(img)
-    phash_arr = phash.hash.flatten()
-
-    # find the closest matches
-    annoy_results = index.get_nns_by_vector(phash_arr, 16, include_distances=True)
-
-    conn = sqlite3.connect('live/twitter_scraper.db')
-    c = conn.cursor()
-
-    results = []
-
-    # look up the location of the match and its tweet info
-    first = True
-    for idx, score in map(list, zip(*annoy_results)):
-        if score > 8:
-            break
-        first = False
-
-        print('score: {}'.format(score))
-        c.execute('SELECT path, filename FROM hashes WHERE idx=(?)', (idx,))
-        dirname, basename = c.fetchone()
-        fullpath = os.path.join(dirname, basename)
-        c.execute('SELECT id FROM info WHERE filename=(?) AND path=(?)', (basename, dirname))
-        tweet_id = c.fetchone()
-        print(tweet_id)
-        tweet_id = tweet_id[0]
-
-        print('local path:   {}'.format(fullpath))
-        print('direct link:  https://pbs.twimg.com/media/{}'.format(basename))
-        print('source tweet: https://www.twitter.com/statuses/{}'.format(tweet_id))
-        print()
-
-        results.append((score, tweet_id, basename))
-
-    conn.close()
-    
-    # sort results
-    results = sorted(results, key=functools.cmp_to_key(results_cmp))
-    print(results)
-
-    return results
+    return img
 
 def results_cmp(a, b):
+    """sort results by score, then by earliest tweet post date"""
     if a[0] > b[0]:
         return 1
     elif a[0] < b[0]:
