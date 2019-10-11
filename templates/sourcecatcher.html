@@ -17,12 +17,14 @@
         <p>Find the Twitter source of a Dreamcatcher fansite photo</p>
         <p class="message"><em>NEW!</em> Paste a link from the Dreamcatcher official app to get full size photos</p>
       </div>
+
+      {% block forms %}
       <div class="inputs">
-        <form action="/">
-          {% if link %}
-            <input type="text" name="link" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ link }}">
+        <form action="/link">
+          {% if url %}
+          <input type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}">
           {% else %}
-            <input type="text" name="link" required placeholder="https://i.imgur.com/QQDz93b.jpg">
+          <input type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg">
           {% endif %}
           <input id="link_submit_btn" type="submit" value="submit">
         </form>
@@ -32,25 +34,14 @@
           <input type="submit" value="submit">
         </form>
       </div>
-      {% if error_msg %}
-        <div class="error">
-          {{ error_msg|safe }}
-        </div>
-      {% elif results %}
-        <div class="results">
-          <div class="results_header">
-            <h2>Results</h2>
-          </div>
-            {% if app or app_direct_image %}
-              {{ app_images|safe }}
-            {% else %}
-              {% if embed %}
-                {{ embed|safe }}
-              {% else %}
-              {% endif %}
-            {% endif %}
-        </div>
-      {% endif %}
+      {% endblock forms %}
+
+      {% block error_msg %}
+      {% endblock error_msg %}
+
+      {% block results %}
+      {% endblock results %}
+
       <div class="footer">
         <p>
         Currently indexing {{ num_photos }} photos from {{ num_tweets }} tweets
