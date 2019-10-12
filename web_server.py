@@ -71,15 +71,8 @@ tweepy_kwargs = {
 @limiter.exempt
 def handle_exception(e):
     """Generic http error handler"""
-    num_photos, num_tweets, mtime= stats()
-
     if request.full_path == '/' or request.full_path == '/?':
-        kwargs = {
-                'num_photos': num_photos,
-                'num_tweets': num_tweets,
-                'mtime': mtime,
-                }
-        return render_template('sourcecatcher.html', **kwargs)
+        return render_page('sourcecatcher.html')
 
     print(e)
 
@@ -94,25 +87,19 @@ def handle_exception(e):
             'results': True,
             'error_msg': error_msg,
             }
-    return render_template('error.html', **kwargs)
+    return render_page('error.html', **kwargs)
 
 @app.errorhandler(413)
 @limiter.exempt
 def entity_too_large(e):
     """Error page if uploaded file is too large"""
-    num_photos, num_tweets, mtime= stats()
-
     kwargs = {
-            'embed': None,
-            'num_photos': num_photos,
-            'num_tweets': num_tweets,
-            'mtime': mtime,
             'app': False,
             'app_direct_image': False,
             'results': True,
             'error_msg': EntityTooLarge().__str__(),
             }
-    return render_template('error.html', **kwargs)
+    return render_page('error.html', **kwargs)
 
 
 @app.route('/upload', methods=['POST'])
@@ -135,13 +122,7 @@ def upload():
 @app.route('/')
 @limiter.exempt
 def root():
-    num_photos, num_tweets, mtime= stats()
-    kwargs = {
-            'num_photos': num_photos,
-            'num_tweets': num_tweets,
-            'mtime': mtime,
-            }
-    return render_template('sourcecatcher.html', **kwargs)
+    return render_page('sourcecatcher.html')
 
 
 @app.route('/link')
@@ -191,7 +172,7 @@ def dc_app(path):
     kwargs['app_text'] = app_text
     kwargs['url'] = path
 
-    return render_template('dc_app.html', **kwargs)
+    return render_page('dc_app.html', **kwargs)
 
 def dc_app_image(path):
     """Get HQ version of DC app picture"""
@@ -226,7 +207,7 @@ def dc_app_image(path):
         kwargs['image_link'] = image_link
         kwargs['url'] = path
 
-        return render_template('dc_app_image.html', **kwargs)
+        return render_page('dc_app_image.html', **kwargs)
 
 
 def find_and_render(location, path):
@@ -237,8 +218,6 @@ def find_and_render(location, path):
     tweet_id = None
     tweets = []
     error_msg = None
-
-    num_photos, num_tweets, mtime= stats()
 
     try:
         if location == 'url':
@@ -285,9 +264,6 @@ def find_and_render(location, path):
 
     kwargs = {
             'tweets': tweets,
-            'num_photos': num_photos,
-            'num_tweets': num_tweets,
-            'mtime': mtime,
             'error_msg': error_msg,
             }
 
@@ -296,10 +272,10 @@ def find_and_render(location, path):
 
     # found some matches
     if len(tweets) != 0:
-        return render_template('match_results.html', **kwargs)
+        return render_page('match_results.html', **kwargs)
 
     # did not find any matches
-    return render_template('error.html', **kwargs)
+    return render_page('error.html', **kwargs)
 
 def get_custom_embed(tweet_id, score):
     """
@@ -358,3 +334,13 @@ def calc_score_percent(score):
         return 0
 
     return int(100 - 100 * score / 32)
+
+def render_page(template, **kwargs):
+    """Get stats and render template"""
+    num_photos, num_tweets, mtime = stats()
+    kwargs['num_photos'] = num_photos
+    kwargs['num_tweets'] = num_tweets
+    kwargs['mtime'] = mtime
+    return render_template(template, **kwargs)
+
+
