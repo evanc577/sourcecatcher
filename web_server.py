@@ -79,9 +79,6 @@ def handle_exception(e):
     error_msg = f'<div class="error_code">{e.code} {e.name}</div><br>{e.description}'
     kwargs = {
             'embed': None,
-            'num_photos': num_photos,
-            'num_tweets': num_tweets,
-            'mtime': mtime,
             'app': False,
             'app_direct_image': False,
             'results': True,
@@ -129,6 +126,22 @@ def root():
 def link():
     url = request.args.get('url')
     return find_and_render('url', url)
+
+
+@app.route('/twitter_users')
+@limiter.exempt
+def users():
+    dirpath = os.path.dirname(os.path.realpath(__file__))
+    path = os.path.join(dirpath, 'config.yaml')
+    with open(path) as f:
+        config = yaml.safe_load(f)
+    users = sorted(config['users'], key=str.casefold)
+    print(users)
+    kwargs = {
+            'users': users
+            }
+
+    return render_page('twitter_users.html', **kwargs)
 
 
 def dc_app(path):

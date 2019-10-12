@@ -120,6 +120,15 @@ p.message {
   font-size: 1.5em;
 }
 
+ul.users_list {
+  columns: 2;
+  -webkit-columns: 2;
+  -moz-columns: 2;
+  list-style-type: none;
+  padding: 0;
+  text-align: center;
+}
+
 @media screen and (max-width: 800px) {
   h1 {
     font-size: 2em;
