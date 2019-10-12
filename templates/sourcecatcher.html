@@ -9,6 +9,7 @@
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}" />
   </head>
   <body>
+    <div id="content">
     <div class="banner">
       <a href="/"><h1>Sourcecatcher</h1></a>
     </div>
@@ -42,17 +43,18 @@
       {% block results %}
       {% endblock results %}
 
-      <div class="footer">
-        <p>
-        Currently indexing {{ num_photos }} photos from {{ num_tweets }} tweets
-        <br>
-        Last updated {{ mtime }} ago
-        <br><br>
-        <a href="twitter_users">View all indexed Twitter users</a>
-        <br><br>
-        Contact <a target="_blank" rel="noopener noreferrer" title="Contact u/ipwnmice" href="https://www.reddit.com/u/ipwnmice">/u/ipwnmice</a> for more information
-        </p>
-      </div>
+    </div>
+    </div>
+    <div id="footer">
+      <p>
+      Currently indexing {{ num_photos }} photos from {{ num_tweets }} tweets
+      <br>
+      Last updated {{ mtime }} ago
+      <br><br>
+      <a href="twitter_users">View all indexed Twitter users</a>
+      <br><br>
+      Contact <a target="_blank" rel="noopener noreferrer" title="Contact u/ipwnmice" href="https://www.reddit.com/u/ipwnmice">/u/ipwnmice</a> for more information
+      </p>
     </div>
   </body>
 </html>

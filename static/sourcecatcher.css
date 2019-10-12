@@ -1,7 +1,13 @@
 html, body {
   margin: 0;
   padding: 0;
+  height: 100%;
   font-family: sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
 }
 
 .banner {
@@ -13,6 +19,16 @@ html, body {
   background-repeat: no-repeat;
   background-position: center;
   margin: 0 auto;
+}
+
+#content {
+  flex: 1 0 auto;
+}
+
+#footer {
+  flex-shrink: 0;
+  padding: 0 20px 0 20px;
+  background-color: #f0f0f0;
 }
 
 h1 {
@@ -32,7 +48,7 @@ h2 {
 }
 
 .main {
-  padding: 50px;
+  padding: 20px;
   margin: auto;
   width: 50%;
   margin: 0 auto;
@@ -43,12 +59,6 @@ h2 {
   max-width: 600px;
   text-align: center;
   margin: 0 auto;
-}
-
-.footer {
-  font-size: 1em;
-  max-width: 600px;
-  margin: 3em auto;
 }
 
 .inputs {
@@ -155,7 +165,6 @@ ul.users_list {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
   }
-
 
   #link_submit_btn {
     margin-top: 0.5em;
