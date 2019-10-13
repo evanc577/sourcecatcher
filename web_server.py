@@ -16,6 +16,7 @@ import tldextract
 import yaml
 import tweepy
 from html import escape
+import sqlite3
 
 UPLOAD_FOLDER = 'uploads'
 try:
@@ -131,11 +132,12 @@ def link():
 @app.route('/twitter_users')
 @limiter.exempt
 def users():
-    dirpath = os.path.dirname(os.path.realpath(__file__))
-    path = os.path.join(dirpath, 'config.yaml')
-    with open(path) as f:
-        config = yaml.safe_load(f)
-    users = sorted(config['users'], key=str.casefold)
+    """Show list of indexed twitter users"""
+    conn = sqlite3.connect('live/twitter_scraper.db')
+    c = conn.cursor()
+    c.execute('SELECT user FROM users')
+    users = c.fetchall()
+    users = [tup[0] for tup in sorted(users)]
     print(users)
     kwargs = {
             'users': users
