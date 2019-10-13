@@ -1,9 +1,11 @@
 {% extends "sourcecatcher.html" %}
 
 {% block results %}
-<h3>{{ app_poster|e }}:</h3>
-<p>{{ app_text|e }}</p>
-{% for f in app_images %}
-<img class="app_img" src="{{ f|e }}">
-{% endfor %}
+<div class="results">
+  <h3>{{ app_poster|e }}:</h3>
+  <p>{{ app_text|e }}</p>
+  {% for f in app_images %}
+  <img class="app_img" src="{{ f|e }}">
+  {% endfor %}
+</div>
 {% endblock results %}
