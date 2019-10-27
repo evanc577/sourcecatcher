@@ -11,117 +11,142 @@ from matplotlib.pyplot import imread
 import sqlite3
 from PIL import Image
 import nmslib
+import pickle
+from sklearn.cluster import MiniBatchKMeans
+from annoy import AnnoyIndex
+
+detector = cv2.ORB_create()
+computer = cv2.xfeatures2d.FREAK_create()
+matcher = cv2.BFMatcher(cv2.NORM_L2)
+bow_extract = cv2.BOWImgDescriptorExtractor(computer, matcher) 
 
 # Feature extractor
-def extract_features(f, vector_size=32):
+def extract_features(f, des_length=128):
     try:
         idx = f[0]
-        path = os.path.join(f[1][0], f[1][1])
-        image = np.array(Image.open(path))
+        path = f[1]
+        print(f'idx={idx:08d} path={path}')
 
-        # Initialize FAST and FREAK
-        fast = cv2.FastFeatureDetector_create()
-        freak = cv2.xfeatures2d.FREAK_create()
-        kaze = cv2.KAZE_create()
+        img = cv2.imread(path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        kp = detector.detect(img, None)
+        kp = sorted(kp, key=lambda x: -x.response)
+        kp, des = computer.compute(img, kp)
 
-        # Finding image keypoints
-        kps = kaze.detect(image)
+        des = des[0:des_length]
 
-        # Getting first 32 of them. 
-        kps = sorted(kps, key=lambda x: -x.response)[:vector_size]
-
-        # computing descriptors vector
-        kps, dsc = kaze.compute(image, kps)
-
-        # Flatten all of them in one big vector - our feature vector
-        dsc = dsc.flatten()
-
-        # Making descriptor of same size
-        # Descriptor vector size is 64
-        needed_size = (vector_size * 64)
-        if dsc.size < needed_size:
-            # if we have less the 32 descriptors then just adding zeros at the
-            # end of our feature vector
-            dsc = np.concatenate([dsc, np.zeros(needed_size - dsc.size)])
-
-        return f[1][1], f[1][0], idx, dsc
+        return idx, path, des
 
     except Exception as e:
         print(e)
         return e
 
+def compute_histograms(f):
+    try:
+        idx = f[0]
+        path = f[1][0]
+        des = f[1][1]
+        print(f'idx={idx:08d} path={path}')
+        hist = np.zeros(dictionary.shape[0], dtype=np.float32)
+        for d in des:
+            cur_min_val = np.inf
+            cur_min = 0
+            for i,cluster in enumerate(dictionary):
+                dist = np.linalg.norm(d - cluster)
+                if dist < cur_min_val:
+                    cur_min_val = dist
+                    cur_min = i
 
-def batch_extractor(images_path, pickled_db_path="features.pck"):
-    files = [os.path.join(images_path, p) for p in sorted(os.listdir(images_path))]
+            hist[cur_min] = hist[cur_min] + 1
 
-    result = {}
-    for f in files:
-        print('Extracting features from image %s' % f)
-        name = f.split('/')[-1].lower()
-        result[name] = extract_features(f)
+        return idx, path, hist
+    except Exception as e:
+        print(e)
+        return e
 
 
 def run():
     conn = sqlite3.connect('working/twitter_scraper.db')
     c = conn.cursor()
 
-    c.execute('CREATE TABLE IF NOT EXISTS features (filename text, path text, idx int32, UNIQUE (idx))')
+    done_descriptors = set()
+    descriptors = {}
+    try:
+        with open('working/descriptors.pkl', 'rb') as f:
+            descriptors = pickle.load(f)
+            for k,v in descriptors.items():
+                done_descriptors.add(k)
+    except Exception as e:
+        pass
 
-    nmslib_index = nmslib.init(method='hnsw', space='cosinesimil')
-    nmslib_index.loadIndex('working/features.nmslib')
 
-    # find previously hashed files
-    c.execute('SELECT path, filename FROM features')
-    done_hashes = set(c.fetchall())
-
-    c.execute('SELECT idx FROM features ORDER BY idx DESC LIMIT 1')
-    cur_max_id = c.fetchone()
-    if cur_max_id is None:
-        next_id = 0
-    else:
-        next_id = cur_max_id[0] + 1
-
-    # calculate phash of new images
+    # calculate descriptors of new images
     c.execute('SELECT path, filename FROM info')
-    files = set(c.fetchall()) - done_hashes
-    print('files to hash: {}'.format(len(files)))
+    files = c.fetchall()
+    files = [os.path.join(a,b) for a,b in files]
+    files = set(files) - done_descriptors
+    print('files to compute: {}'.format(len(files)))
     files = enumerate(files)
         
-    rs = []
-    with Pool(processes=cpu_count()) as pool:
+    new_descriptors = {}
+    with Pool(processes=cpu_count()//2) as pool:
         for r in pool.imap(extract_features, files, chunksize=64):
             if not isinstance(r, Exception):
-                print('OKAY')
-                try:
-                    filepath = os.path.join(r[0], r[1])
-                    print(f'{r[2]:08d} - {filepath}')
-                    c.execute('INSERT INTO features VALUES (?,?,?)', (r[0], r[1], r[2],))
-                    rs.append(r)
-                except sqlite3.IntegrityError:
-                    pass
-            else:
-                print('EXCEPTION')
+                descriptors[r[1]] = r[2]
+                new_descriptors[r[1]] = r[2]
 
-    conn.commit()
+    with open('working/descriptors.pkl', 'wb') as f:
+        pickle.dump(descriptors, f)
 
-    for r in rs:
-        nmslib_index.addDataPoint(r[2], r[3])
+    try:
+        with open('working/kmeans.pkl', 'rb') as f:
+            kmeans = pickle.load(f)
+    except:
+        kmeans = MiniBatchKMeans(n_clusters=16, batch_size=128)
 
-    M = 30
-    efC = 1000
-    num_threads = cpu_count()
-    index_time_params = {'M': M, 'indexThreadQty': num_threads, 'efConstruction': efC, 'post': 0}
+    for i,des in enumerate(new_descriptors.items()):
+        if des[1] is not None:
+            print(f'calculating kmeans, image: {i:08d}')
+            kmeans = kmeans.partial_fit(np.float32(des[1]))
 
-    nmslib_index.createIndex(index_time_params, print_progress=True)
-    nmslib_index.saveIndex('working/features.nmslib')
+    with open('working/kmeans.pkl', 'wb') as f:
+        pickle.dump(kmeans, f)
 
-    sys.exit(0)
+    global dictionary
+    dictionary = np.uint8(kmeans.cluster_centers_)
+    print(dictionary)
+    print(dictionary.shape)
+    bow_extract.setVocabulary(dictionary)
 
-    images_path = 'resources/images/'
-    files = [os.path.join(images_path, p) for p in sorted(os.listdir(images_path))]
-    # getting 3 random images 
-    sample = random.sample(files, 3)
-    
-    batch_extractor(images_path)
+    c.execute('SELECT path, filename FROM info')
+    all_images = c.fetchall()
+    files = []
+    for f in all_images:
+        fullpath = os.path.join(f[0], f[1])
+        if fullpath in descriptors:
+            files.append((fullpath, descriptors[fullpath]))
+    max_idx = len(files)
+    print(max_idx)
+    BOW_annoy_map = {}
+    enum_files = enumerate(files)
+    for i,f in enum_files:
+        BOW_annoy_map[i] = f[0]
+
+    index = AnnoyIndex(dictionary.shape[0], 'angular')
+
+    files = enumerate(files)
+    with Pool(processes=cpu_count()) as pool:
+        for r in pool.imap(compute_histograms, files, chunksize=64):
+            if not isinstance(r, Exception):
+                index.add_item(r[0], r[2])
+        
+    index.build(20)
+    index.save('working/BOW_index.ann')
+
+    with open('working/BOWDictionary.pkl', 'wb') as f:
+        pickle.dump(dictionary, f)
+    with open('working/BOW_annoy_map', 'wb') as f:
+        pickle.dump(BOW_annoy_map, f)
+
 
 run()
