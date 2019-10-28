@@ -1,0 +1,16 @@
+# images
+*.png
+*.jpg
+*.jpeg
+
+# python virtual environment
+sourcecatcher_venv/
+
+# config files
+*.yaml
+
+# misc directories
+live/
+working/
+backups/
+uploads/
