@@ -57,7 +57,8 @@ def find_similar(img_path, location='file'):
 
     # find most similar images
     n = 16
-    annoy_results = index.get_nns_by_vector(hist, n, include_distances=True)
+    n_trees = index.get_n_trees()
+    annoy_results = index.get_nns_by_vector(hist, n, include_distances=True, search_k=100*n*n_trees)
     results = []
     for i,idx in enumerate(annoy_results[0]):
         # discard bad results
