@@ -4,47 +4,78 @@ import os
 import sys
 import pickle
 from annoy import AnnoyIndex
+import sqlite3
+from find_match import download_content
 
 
-def image_detect_and_compute(img_name):
+def image_detect_and_compute(img_name, location='file'):
     """Detect and compute interest points and their descriptors."""
     detector = cv2.ORB_create()
     computer = cv2.xfeatures2d.FREAK_create()
-    img = cv2.imread(img_name)
+
+    # load image
+    if location == 'file':
+        img = cv2.imread(img_name)
+    elif location == 'url':
+        content = np.asarray(download_content(img_name))
+        img = cv2.imdecode(content, cv2.IMREAD_UNCHANGED)
+
+    # compute descriptors
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     kp = detector.detect(img, None)
     kp = sorted(kp, key=lambda x: -x.response)[:2048]
     kp, des = computer.compute(img, kp)
 
-
+    # calculate histogram
     with open('working/kmeans.pkl', 'rb') as f:
         kmeans = pickle.load(f)
-
     indices = kmeans.predict(des)
-    hist = np.zeros(dictionary.shape[0], dtype=np.float32)
+    hist = np.zeros(kmeans.cluster_centers_.shape[0], dtype=np.float32)
     for i in indices:
         hist[i] = hist[i] + 1
 
     return hist
     
 
-def find_similar(img_path):
-    global dictionary
+def find_similar(img_path, location='file'):
+    global kmeans
 
-    with open('working/BOW_dictionary.pkl', 'rb') as f:
-        dictionary = pickle.load(f)
-    with open('working/BOW_annoy_map.pkl', 'rb') as f:
+    # load files
+    with open('live/BOW_annoy_map.pkl', 'rb') as f:
         annoy_map = pickle.load(f)
+    with open('live/kmeans.pkl', 'rb') as f:
+        kmeans = pickle.load(f)
 
-    index = AnnoyIndex(dictionary.shape[0], 'angular')
-    index.load('working/BOW_index.ann')
+    index = AnnoyIndex(kmeans.cluster_centers_.shape[0], 'angular')
+    index.load('live/BOW_index.ann')
 
-    hist = image_detect_and_compute(img_path)
+    conn = sqlite3.connect('live/twitter_scraper.db')
+    c = conn.cursor()
 
+    # compute histogram
+    hist = image_detect_and_compute(img_path, location=location)
+
+    # find most similar images
     n = 16
     annoy_results = index.get_nns_by_vector(hist, n, include_distances=True)
-    print(annoy_results)
+    results = []
     for i,idx in enumerate(annoy_results[0]):
-        print(annoy_map[idx], annoy_results[1][i])
+        # discard bad results
+        if annoy_results[1][i] > 1.0:
+            break
 
-find_similar(sys.argv[1])
+        # get tweet info
+        path = annoy_map[idx]
+        basename = os.path.basename(path)
+        dirname = os.path.dirname(path)
+        c.execute('SELECT id FROM info WHERE filename=(?) AND path=(?)', (basename, dirname))
+        tweet_id = c.fetchone()[0]
+        score = int(100 * (1 - annoy_results[1][i]))
+        tup = (score, tweet_id, basename,)
+        print(tup)
+        results.append(tup)
+
+    return results
+
+if __name__ == "__main__":
+    find_similar(sys.argv[1])

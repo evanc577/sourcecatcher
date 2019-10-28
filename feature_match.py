@@ -1,27 +1,20 @@
 from multiprocessing import Pool, TimeoutError, cpu_count
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 import sys
 import os
-import scipy
-import scipy.spatial
-import random
-from matplotlib.pyplot import imread
 import sqlite3
-from PIL import Image
-import nmslib
 import pickle
 from sklearn.cluster import MiniBatchKMeans
 from annoy import AnnoyIndex
+import yaml
 
 detector = cv2.ORB_create()
 computer = cv2.xfeatures2d.FREAK_create()
-matcher = cv2.BFMatcher(cv2.NORM_L2)
-bow_extract = cv2.BOWImgDescriptorExtractor(computer, matcher) 
 
 # Feature extractor
 def extract_features(f, des_length=2048):
+    """Extract features and descriptors from images"""
     try:
         idx = f[0]
         path = f[1]
@@ -42,6 +35,7 @@ def extract_features(f, des_length=2048):
         return e
 
 def compute_histograms(f):
+    """Compute histograms for bag of (visual) words"""
     try:
         idx = f[0]
         path = f[1][0]
@@ -58,10 +52,30 @@ def compute_histograms(f):
         return e
 
 
-def run():
+def gen_cbir():
+    """Generate structures needed for content-based image retrieval"""
+
+    global kmeans
+
+    # parse config.yaml
+    try:
+        dirpath = os.path.dirname(os.path.realpath(__file__))
+        path = os.path.join(dirpath, 'config.yaml')
+        with open(path) as f:
+            config = yaml.safe_load(f)
+    except IOError:
+        print("error loading config file")
+        sys.exit(1)
+    try:
+        num_cpus = config['cpus']
+    except KeyError:
+        num_cpus = cpu_count()
+
+    # connect to sqlite database
     conn = sqlite3.connect('working/twitter_scraper.db')
     c = conn.cursor()
 
+    # load descriptors
     done_descriptors = set()
     descriptors = {}
     try:
@@ -72,7 +86,6 @@ def run():
     except Exception as e:
         pass
 
-
     # calculate descriptors of new images
     c.execute('SELECT path, filename FROM info')
     files = c.fetchall()
@@ -80,18 +93,16 @@ def run():
     files = set(files) - done_descriptors
     print('files to compute: {}'.format(len(files)))
     files = enumerate(files)
-        
+
+    # extract features from new images
     new_descriptors = {}
-    with Pool(processes=cpu_count()) as pool:
+    with Pool(processes=num_cpus) as pool:
         for r in pool.imap(extract_features, files, chunksize=64):
             if not isinstance(r, Exception):
                 descriptors[r[1]] = r[2]
                 new_descriptors[r[1]] = r[2]
 
-    with open('working/descriptors.pkl', 'wb') as f:
-        pickle.dump(descriptors, f)
-
-    global kmeans
+    # create clusters
     try:
         with open('working/kmeans.pkl', 'rb') as f:
             kmeans = pickle.load(f)
@@ -100,6 +111,7 @@ def run():
         n_clusters = 512
         kmeans = MiniBatchKMeans(n_clusters=n_clusters, batch_size=2048)
 
+    # calculate kmeans
     cur = None
     for i,des in enumerate(new_descriptors.items()):
         if des[1] is not None:
@@ -123,14 +135,13 @@ def run():
         kmeans = kmeans.partial_fit(np.float32(cur))
 
 
+    # save descriptors and kmeans
+    with open('working/descriptors.pkl', 'wb') as f:
+        pickle.dump(descriptors, f)
     with open('working/kmeans.pkl', 'wb') as f:
         pickle.dump(kmeans, f)
 
-    dictionary = np.uint8(kmeans.cluster_centers_)
-    print(dictionary)
-    print(dictionary.shape)
-    bow_extract.setVocabulary(dictionary)
-
+    # set up structures for annoy index
     c.execute('SELECT path, filename FROM info')
     all_images = c.fetchall()
     files = []
@@ -139,27 +150,25 @@ def run():
         if fullpath in descriptors:
             files.append((fullpath, descriptors[fullpath]))
     max_idx = len(files)
-    print(max_idx)
     BOW_annoy_map = {}
     enum_files = enumerate(files)
     for i,f in enum_files:
         BOW_annoy_map[i] = f[0]
 
-    index = AnnoyIndex(dictionary.shape[0], 'angular')
+    index = AnnoyIndex(n_clusters, 'angular')
 
+    # add histograms to annoy index
     files = enumerate(files)
-    with Pool(processes=cpu_count()) as pool:
+    with Pool(processes=num_cpus) as pool:
         for r in pool.imap(compute_histograms, files, chunksize=64):
             if not isinstance(r, Exception):
                 index.add_item(r[0], r[2])
-        
     index.build(20)
     index.save('working/BOW_index.ann')
 
-    with open('working/BOW_dictionary.pkl', 'wb') as f:
-        pickle.dump(dictionary, f)
+    # save index map
     with open('working/BOW_annoy_map.pkl', 'wb') as f:
         pickle.dump(BOW_annoy_map, f)
 
-
-run()
+if __name__ == '__main__':
+    gen_cbir()

@@ -2,6 +2,7 @@ from flask import Flask, flash, redirect, render_template, request, session, abo
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from find_match import find, stats
+from find_similar import find_similar
 from sc_exceptions import *
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import HTTPException
@@ -261,13 +262,37 @@ def find_and_render(location, path):
 
             score_percent = calc_score_percent(score)
 
-            tweets.append(get_custom_embed(tweet_id, score_percent))
+            try:
+                tweets.append(get_custom_embed(tweet_id, score_percent))
 
-            id_set.add(tweet_id)
-            count += 1
+                id_set.add(tweet_id)
+                count += 1
+            except:
+                pass
 
         if count == 0:
-            raise NoMatchesFound
+            # try content-based search if no matches are found
+            if location == 'url':
+                found = find_similar(path, location='url')
+            elif location == 'file':
+                found = find_similar(path, location='file')
+            id_set = set()
+            count = 0
+            for candidate in found:
+                score, tweet_id, basename = candidate
+                if tweet_id in id_set:
+                    continue
+
+                try:
+                    tweets.append(get_custom_embed(tweet_id, score))
+
+                    id_set.add(tweet_id)
+                    count += 1
+                except:
+                    pass
+
+            if count == 0:
+                raise NoMatchesFound
 
     except SCError as e:
         error_msg = str(e)

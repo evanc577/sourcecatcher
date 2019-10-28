@@ -10,3 +10,6 @@ tweepy
 Werkzeug
 beautifulsoup4
 tldextract
+scikit-learn
+opencv-python
+opencv-contrib-python

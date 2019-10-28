@@ -78,35 +78,41 @@ def find(location, path):
 
     return results
 
+def download_content(url):
+    MAX_DOWNLOAD = 15 * 1024 * 1024
+    try:
+        response = requests.get(url, stream=True, timeout=30)
+    except requests.exceptions.MissingSchema as e:
+        try:
+            # try https
+            response = requests.get("https://" + url, stream=True, timeout=30)
+        except requests.RequestException as e:
+            print(e)
+            try:
+                # try http
+                response = requests.get("http://" + url, stream=True, timeout=30)
+            except requests.RequestException as e:
+                print(e)
+                raise InvalidLink
+    except requests.exceptions.RequestException as e:
+        raise InvalidLink
+
+    size = 0
+    content = bytearray()
+    for chunk in response.iter_content(1024):
+        size += len(chunk)
+        content += chunk
+        if size > MAX_DOWNLOAD:
+            raise EntityTooLarge
+
+    return content
+
+
 def load_image(location, path):
     """Load the user requested image"""
 
     if location == 'url':
-        MAX_DOWNLOAD = 15 * 1024 * 1024
-        try:
-            response = requests.get(path, stream=True, timeout=30)
-        except requests.exceptions.MissingSchema as e:
-            try:
-                # try https
-                response = requests.get("https://" + path, stream=True, timeout=30)
-            except requests.RequestException as e:
-                print(e)
-                try:
-                    # try http
-                    response = requests.get("http://" + path, stream=True, timeout=30)
-                except requests.RequestException as e:
-                    print(e)
-                    raise InvalidLink
-        except requests.exceptions.RequestException as e:
-            raise InvalidLink
-
-        size = 0
-        content = bytearray()
-        for chunk in response.iter_content(1024):
-            size += len(chunk)
-            content += chunk
-            if size > MAX_DOWNLOAD:
-                raise EntityTooLarge
+        content = download_content(path)
 
         try:
             img = Image.open(BytesIO(content))
