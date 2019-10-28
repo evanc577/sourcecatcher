@@ -125,6 +125,17 @@ p.message {
   max-width: 600px;
 }
 
+.warning {
+  text-align: center;
+  color: #9F6000;
+  background-color: #FEEFB3;
+  margin: 20px auto;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-radius: 5px;
+  max-width: 600px;
+}
+
 .error_code {
   color: #A0000C;
   font-size: 1.5em;

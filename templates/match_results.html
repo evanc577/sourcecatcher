@@ -2,47 +2,52 @@
 
 {% block results %}
 <div class="results">
+  {% if warning_msg %}
+  <div class="warning">
+    {{ warning_msg|safe }}
+  </div>
+  {% endif %}
   <div class="results_header">
     <h2>Results</h2>
   </div>
-{% for tweet in tweets %}
-{% if tweet.custom %}
-<a class="tweet_embed" target="_blank" rel="noopener noreferrer" title="View on Twitter" href="https://twitter.com/{{ tweet.screen_name|e }}/status/{{ tweet.tweet_id }}">
-  <div class="match_score">Match Score: {{ tweet.score }}</div>
-  <img class="twitter_logo" src="static/Twitter_Logo_Blue.svg">
-  <div class="author">
-    <img class="avatar" alt="Avatar" src="{{ tweet.profile_image|e }}">
-    <div class="name_container">
-      <span class="identity_name">
-        {{ tweet.identity_name|e }}
-      </span>
-      <span class="screen_name">
-        @{{ tweet.screen_name|e }}
-      </span>
+  {% for tweet in tweets %}
+  {% if tweet.custom %}
+  <a class="tweet_embed" target="_blank" rel="noopener noreferrer" title="View on Twitter" href="https://twitter.com/{{ tweet.screen_name|e }}/status/{{ tweet.tweet_id }}">
+    <div class="match_score">Match Score: {{ tweet.score }}</div>
+    <img class="twitter_logo" src="static/Twitter_Logo_Blue.svg">
+    <div class="author">
+      <img class="avatar" alt="Avatar" src="{{ tweet.profile_image|e }}">
+      <div class="name_container">
+        <span class="identity_name">
+          {{ tweet.identity_name|e }}
+        </span>
+        <span class="screen_name">
+          @{{ tweet.screen_name|e }}
+        </span>
+      </div>
     </div>
-  </div>
-  <div class="datetime">
-    <script>datetime = new Date("{{ tweet.ts }}");
-      datestr = datetime.toLocaleDateString();
-      timestr = datetime.toLocaleTimeString();
-      datetimestr = timestr + " - " + datestr;
-      document.write(datetimestr)
-    </script>
-  </div>
-  <div class="tweet_text">
-    <p style="white-space: pre-wrap">{{ tweet.text_html|e }}</p>
-  </div>
-  <div class="tweet_images">
-    {% for image in tweet.images %}
-    <div class="image_container num_media{{ tweet.num_media }}">
-      <img alt="Twitter image" src="{{ image|e }}">
+    <div class="datetime">
+      <script>datetime = new Date("{{ tweet.ts }}");
+        datestr = datetime.toLocaleDateString();
+timestr = datetime.toLocaleTimeString();
+datetimestr = timestr + " - " + datestr;
+document.write(datetimestr)
+      </script>
     </div>
-    {% endfor %}
-  </div>
-</a>
-{% else %}
-{{ tweet.embed_tweet|safe }}
-{% endif %}
-{% endfor %}
+    <div class="tweet_text">
+      <p style="white-space: pre-wrap">{{ tweet.text_html|e }}</p>
+    </div>
+    <div class="tweet_images">
+      {% for image in tweet.images %}
+      <div class="image_container num_media{{ tweet.num_media }}">
+        <img alt="Twitter image" src="{{ image|e }}">
+      </div>
+      {% endfor %}
+    </div>
+  </a>
+  {% else %}
+  {{ tweet.embed_tweet|safe }}
+  {% endif %}
+  {% endfor %}
 </div>
 {% endblock results %}

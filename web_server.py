@@ -234,6 +234,7 @@ def find_and_render(location, path):
     tweet_id = None
     tweets = []
     error_msg = None
+    warning_msg = None
 
     try:
         if location == 'url':
@@ -293,6 +294,8 @@ def find_and_render(location, path):
 
             if count == 0:
                 raise NoMatchesFound
+            else:
+                warning_msg = "No exact matches found<br /><strong>Experimental:</strong> Showing close matches"
 
     except SCError as e:
         error_msg = str(e)
@@ -305,6 +308,7 @@ def find_and_render(location, path):
     kwargs = {
             'tweets': tweets,
             'error_msg': error_msg,
+            'warning_msg': warning_msg,
             }
 
     if location == 'url':
