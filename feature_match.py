@@ -6,6 +6,7 @@ import os
 import sqlite3
 import pickle
 from sklearn.cluster import MiniBatchKMeans
+import joblib
 from annoy import AnnoyIndex
 import yaml
 
@@ -79,10 +80,9 @@ def gen_cbir():
     done_descriptors = set()
     descriptors = {}
     try:
-        with open('working/descriptors.pkl', 'rb') as f:
-            descriptors = pickle.load(f)
-            for k,v in descriptors.items():
-                done_descriptors.add(k)
+        descriptors = joblib.load('working/descriptors.pkl')
+        for k,v in descriptors.items():
+            done_descriptors.add(k)
     except Exception as e:
         pass
 
@@ -104,9 +104,8 @@ def gen_cbir():
 
     # create clusters
     try:
-        with open('working/kmeans.pkl', 'rb') as f:
-            kmeans = pickle.load(f)
-            n_clusters = kmeans.cluster_centers_.shape[0]
+        kmeans = joblib.load('working/kmeans.pkl')
+        n_clusters = kmeans.cluster_centers_.shape[0]
     except:
         n_clusters = 512
         kmeans = MiniBatchKMeans(n_clusters=n_clusters, batch_size=2048)
@@ -136,10 +135,8 @@ def gen_cbir():
 
 
     # save descriptors and kmeans
-    with open('working/descriptors.pkl', 'wb') as f:
-        pickle.dump(descriptors, f)
-    with open('working/kmeans.pkl', 'wb') as f:
-        pickle.dump(kmeans, f)
+    joblib.dump(descriptors, 'working/descriptors.pkl')
+    joblib.dump(kmeans, 'working/kmeans.pkl')
 
     # set up structures for annoy index
     c.execute('SELECT path, filename FROM info')
@@ -167,8 +164,7 @@ def gen_cbir():
     index.save('working/BOW_index.ann')
 
     # save index map
-    with open('working/BOW_annoy_map.pkl', 'wb') as f:
-        pickle.dump(BOW_annoy_map, f)
+    joblib.dump(BOW_annoy_map, 'working/BOW_annoy_map.pkl')
 
 if __name__ == '__main__':
     gen_cbir()

@@ -6,6 +6,7 @@ import pickle
 from annoy import AnnoyIndex
 import sqlite3
 from find_match import download_content
+import joblib
 
 
 def image_detect_and_compute(img_name, location='file'):
@@ -27,8 +28,7 @@ def image_detect_and_compute(img_name, location='file'):
     kp, des = computer.compute(img, kp)
 
     # calculate histogram
-    with open('working/kmeans.pkl', 'rb') as f:
-        kmeans = pickle.load(f)
+    kmeans = joblib.load('working/kmeans.pkl')
     indices = kmeans.predict(des)
     hist = np.zeros(kmeans.cluster_centers_.shape[0], dtype=np.float32)
     for i in indices:
@@ -41,10 +41,8 @@ def find_similar(img_path, location='file'):
     global kmeans
 
     # load files
-    with open('live/BOW_annoy_map.pkl', 'rb') as f:
-        annoy_map = pickle.load(f)
-    with open('live/kmeans.pkl', 'rb') as f:
-        kmeans = pickle.load(f)
+    annoy_map = joblib.load('live/BOW_annoy_map.pkl')
+    kmeans = joblib.load('live/kmeans.pkl')
 
     index = AnnoyIndex(kmeans.cluster_centers_.shape[0], 'angular')
     index.load('live/BOW_index.ann')
