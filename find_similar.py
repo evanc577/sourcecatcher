@@ -28,7 +28,6 @@ def image_detect_and_compute(img_name, location='file'):
     kp, des = computer.compute(img, kp)
 
     # calculate histogram
-    kmeans = joblib.load('working/kmeans.pkl')
     indices = kmeans.predict(des)
     hist = np.zeros(kmeans.cluster_centers_.shape[0], dtype=np.float32)
     for i in indices:
