@@ -13,21 +13,17 @@ def image_detect_and_compute(img_name):
     img = cv2.imread(img_name)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     kp = detector.detect(img, None)
-    kp = sorted(kp, key=lambda x: -x.response)[:128]
+    kp = sorted(kp, key=lambda x: -x.response)[:2048]
     kp, des = computer.compute(img, kp)
 
 
-    hist = np.zeros(dictionary.shape[0], dtype=np.float32)
-    for d in des:
-        cur_min_val = np.inf
-        cur_min = 0
-        for i,cluster in enumerate(dictionary):
-            dist = np.linalg.norm(d - cluster)
-            if dist < cur_min_val:
-                cur_min_val = dist
-                cur_min = i
+    with open('working/kmeans.pkl', 'rb') as f:
+        kmeans = pickle.load(f)
 
-        hist[cur_min] = hist[cur_min] + 1
+    indices = kmeans.predict(des)
+    hist = np.zeros(dictionary.shape[0], dtype=np.float32)
+    for i in indices:
+        hist[i] = hist[i] + 1
 
     return hist
     
@@ -35,9 +31,9 @@ def image_detect_and_compute(img_name):
 def find_similar(img_path):
     global dictionary
 
-    with open('working/BOWDictionary.pkl', 'rb') as f:
+    with open('working/BOW_dictionary.pkl', 'rb') as f:
         dictionary = pickle.load(f)
-    with open('working/BOW_annoy_map', 'rb') as f:
+    with open('working/BOW_annoy_map.pkl', 'rb') as f:
         annoy_map = pickle.load(f)
 
     index = AnnoyIndex(dictionary.shape[0], 'angular')

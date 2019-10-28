@@ -21,7 +21,7 @@ matcher = cv2.BFMatcher(cv2.NORM_L2)
 bow_extract = cv2.BOWImgDescriptorExtractor(computer, matcher) 
 
 # Feature extractor
-def extract_features(f, des_length=128):
+def extract_features(f, des_length=2048):
     try:
         idx = f[0]
         path = f[1]
@@ -47,17 +47,10 @@ def compute_histograms(f):
         path = f[1][0]
         des = f[1][1]
         print(f'idx={idx:08d} path={path}')
-        hist = np.zeros(dictionary.shape[0], dtype=np.float32)
-        for d in des:
-            cur_min_val = np.inf
-            cur_min = 0
-            for i,cluster in enumerate(dictionary):
-                dist = np.linalg.norm(d - cluster)
-                if dist < cur_min_val:
-                    cur_min_val = dist
-                    cur_min = i
-
-            hist[cur_min] = hist[cur_min] + 1
+        indices = kmeans.predict(des)
+        hist = np.zeros(kmeans.cluster_centers_.shape[0], dtype=np.float32)
+        for i in indices:
+            hist[i] = hist[i] + 1
 
         return idx, path, hist
     except Exception as e:
@@ -89,7 +82,7 @@ def run():
     files = enumerate(files)
         
     new_descriptors = {}
-    with Pool(processes=cpu_count()//2) as pool:
+    with Pool(processes=cpu_count()) as pool:
         for r in pool.imap(extract_features, files, chunksize=64):
             if not isinstance(r, Exception):
                 descriptors[r[1]] = r[2]
@@ -98,21 +91,41 @@ def run():
     with open('working/descriptors.pkl', 'wb') as f:
         pickle.dump(descriptors, f)
 
+    global kmeans
     try:
         with open('working/kmeans.pkl', 'rb') as f:
             kmeans = pickle.load(f)
+            n_clusters = kmeans.cluster_centers_.shape[0]
     except:
-        kmeans = MiniBatchKMeans(n_clusters=16, batch_size=128)
+        n_clusters = 512
+        kmeans = MiniBatchKMeans(n_clusters=n_clusters, batch_size=2048)
 
+    cur = None
     for i,des in enumerate(new_descriptors.items()):
         if des[1] is not None:
             print(f'calculating kmeans, image: {i:08d}')
-            kmeans = kmeans.partial_fit(np.float32(des[1]))
+            if des[1].shape[0] < n_clusters:
+                if cur is None:
+                    cur = des[1]
+                else:
+                    cur = np.concatenate((cur, des[1]), axis=0)
+                if cur is not None and cur.shape[0] > n_clusters:
+                    kmeans = kmeans.partial_fit(np.float32(cur))
+                    cur = None
+            else:
+                if cur is not None:
+                    cur = np.concatenate((cur, des[1]), axis=0)
+                    kmeans = kmeans.partial_fit(np.float32(cur))
+                    cur = None
+                else:
+                    kmeans = kmeans.partial_fit(np.float32(des[1]))
+    if cur is not None:
+        kmeans = kmeans.partial_fit(np.float32(cur))
+
 
     with open('working/kmeans.pkl', 'wb') as f:
         pickle.dump(kmeans, f)
 
-    global dictionary
     dictionary = np.uint8(kmeans.cluster_centers_)
     print(dictionary)
     print(dictionary.shape)
@@ -143,9 +156,9 @@ def run():
     index.build(20)
     index.save('working/BOW_index.ann')
 
-    with open('working/BOWDictionary.pkl', 'wb') as f:
+    with open('working/BOW_dictionary.pkl', 'wb') as f:
         pickle.dump(dictionary, f)
-    with open('working/BOW_annoy_map', 'wb') as f:
+    with open('working/BOW_annoy_map.pkl', 'wb') as f:
         pickle.dump(BOW_annoy_map, f)
 
 
