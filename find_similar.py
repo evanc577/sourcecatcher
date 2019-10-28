@@ -7,9 +7,10 @@ from annoy import AnnoyIndex
 import sqlite3
 from find_match import download_content
 import joblib
+import time
 
 
-def image_detect_and_compute(img_name, location='file'):
+def image_detect_and_compute(img_name, location='file', content=None):
     """Detect and compute interest points and their descriptors."""
     detector = cv2.ORB_create()
     computer = cv2.xfeatures2d.FREAK_create()
@@ -18,7 +19,10 @@ def image_detect_and_compute(img_name, location='file'):
     if location == 'file':
         img = cv2.imread(img_name)
     elif location == 'url':
-        content = np.asarray(download_content(img_name))
+        if content is None:
+            content = np.asarray(download_content(img_name))
+        else:
+            content = np.asarray(content)
         img = cv2.imdecode(content, cv2.IMREAD_UNCHANGED)
 
     # compute descriptors
@@ -36,7 +40,7 @@ def image_detect_and_compute(img_name, location='file'):
     return hist
     
 
-def find_similar(img_path, location='file'):
+def find_similar(img_path, location='file', content=None):
     global kmeans
 
     # load files
@@ -50,12 +54,17 @@ def find_similar(img_path, location='file'):
     c = conn.cursor()
 
     # compute histogram
-    hist = image_detect_and_compute(img_path, location=location)
+    start_time = time.time()
+    hist = image_detect_and_compute(img_path, location=location, content=content)
 
     # find most similar images
     n = 3
     n_trees = index.get_n_trees()
+    ann_start_time = time.time()
     annoy_results = index.get_nns_by_vector(hist, n, include_distances=True, search_k=100*n*n_trees)
+    ann_end_time = time.time()
+
+    # process results
     results = []
     for i,idx in enumerate(annoy_results[0]):
         # discard bad results
@@ -70,8 +79,13 @@ def find_similar(img_path, location='file'):
         tweet_id = c.fetchone()[0]
         score = int(100 * (1 - annoy_results[1][i]))
         tup = (score, tweet_id, basename,)
-        print(tup)
         results.append(tup)
+
+    end_time = time.time()
+
+    print(results)
+    print(f"total search time (cbir): {end_time - start_time:06f} seconds")
+    print(f"annoy search time (cbir): {ann_end_time - ann_start_time:06f} seconds")
 
     return results
 

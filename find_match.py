@@ -16,7 +16,7 @@ from datetime import datetime
 
 Image.warnings.simplefilter('error', Image.DecompressionBombWarning)
 
-def find(location, path):
+def find(location, path, content=None):
     """find the closest images to an image
 
     Given a path or a url to an image, returns the closest matches
@@ -34,7 +34,7 @@ def find(location, path):
     c = conn.cursor()
 
     # load the requested image
-    img = load_image(location, path)
+    img = load_image(location, path, content=content)
 
     start_time = time.time()
 
@@ -73,8 +73,8 @@ def find(location, path):
     end_time = time.time()
 
     print(results)
-    print(f"total search time: {end_time - start_time:06f} seconds")
-    print(f"annoy search time: {ann_end_time - ann_start_time:06f} seconds")
+    print(f"total search time (phash): {end_time - start_time:06f} seconds")
+    print(f"annoy search time (phash): {ann_end_time - ann_start_time:06f} seconds")
 
     return results
 
@@ -108,11 +108,12 @@ def download_content(url):
     return content
 
 
-def load_image(location, path):
+def load_image(location, path, content=None):
     """Load the user requested image"""
 
     if location == 'url':
-        content = download_content(path)
+        if content is None:
+            content = download_content(path)
 
         try:
             img = Image.open(BytesIO(content))

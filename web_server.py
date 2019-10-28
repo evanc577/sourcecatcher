@@ -1,7 +1,7 @@
 from flask import Flask, flash, redirect, render_template, request, session, abort
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from find_match import find, stats
+from find_match import find, stats, download_content
 from find_similar import find_similar
 from sc_exceptions import *
 from werkzeug.utils import secure_filename
@@ -235,6 +235,7 @@ def find_and_render(location, path):
     tweets = []
     error_msg = None
     warning_msg = None
+    content = None
 
     try:
         if location == 'url':
@@ -249,7 +250,8 @@ def find_and_render(location, path):
                     extract.suffix == 'com':
                 return dc_app_image(path)
             else:
-                found = find('url', path)
+                content = download_content(path)
+                found = find('url', path, content=content)
 
         elif location == 'file':
             found = find('file', path)
@@ -274,7 +276,7 @@ def find_and_render(location, path):
         if count == 0:
             # try content-based search if no matches are found
             if location == 'url':
-                found = find_similar(path, location='url')
+                found = find_similar(path, location='url', content=content)
             elif location == 'file':
                 found = find_similar(path, location='file')
             id_set = set()
