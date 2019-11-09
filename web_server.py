@@ -161,12 +161,14 @@ def dc_app(path):
         error_msg = 'Error: Invalid Dreamcatcher app link'
         raise InvalidDCAppLink
 
+    regex = r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+)"
+
     # find all images from app post
     app = True
     source = response.text
     parsed_html = BeautifulSoup(source, features='html.parser')
     images_html = ''.join([str(h) for h in parsed_html.body.find_all('div', attrs={'class': 'img-box'})])
-    x = re.findall(r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+)", images_html)
+    x = re.findall(regex, images_html)
 
     # create urls for full-size images
     files = []
@@ -182,10 +184,23 @@ def dc_app(path):
     app_text = parsed_html.body.find('div', attrs={'class': 'card-text'}).text.strip()
     app_images = list(OrderedDict.fromkeys(files))
 
+    # find profile picture
+    profile_pic = parsed_html.body.find('div', attrs={'class': 'profile-img'}).find('img').attrs['src']
+    try:
+        x = re.findall(regex, profile_pic)[0]
+        temp = x[0]
+        temp = temp.replace('cache/', '')
+        temp = temp.replace('thumb-', '')
+        temp = temp.replace(x[2], '')
+        profile_pic = temp
+    except Exception as e:
+        print(f"Error getting full size profile picture {e}")
+
     kwargs = {}
     kwargs['app_images'] = app_images
     kwargs['app_poster'] = app_poster
     kwargs['app_text'] = app_text
+    kwargs['profile_pic'] = profile_pic
     kwargs['url'] = path
 
     return render_page('dc_app.html', **kwargs)
@@ -245,9 +260,10 @@ def find_and_render(location, path):
                     extract.domain == 'candlemystar' and \
                     extract.suffix == 'com':
                 return dc_app(path)
-            elif extract.subdomain == 'file' and \
+            elif False and extract.subdomain == 'file' and \
                     extract.domain == 'candlemystar' and \
                     extract.suffix == 'com':
+                # disabled for now
                 return dc_app_image(path)
             else:
                 content = download_content(path)

@@ -2,7 +2,12 @@
 
 {% block results %}
 <div class="results">
-  <h3>{{ app_poster|e }}:</h3>
+  <div class="dc_app_user">
+    <img class="dc_app_profile_pic" src={{ profile_pic|e }}>
+    <div class="dc_app_username">
+      {{ app_poster|e }}
+    </div>
+  </div>
   <p>{{ app_text|e }}</p>
   {% for f in app_images %}
   <img class="app_img" src="{{ f|e }}">

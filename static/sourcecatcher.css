@@ -104,6 +104,23 @@ input[type=submit] {
   text-align: left;
 }
 
+.dc_app_user {
+  display: flex;
+}
+
+.dc_app_profile_pic {
+  border-radius: 50%;
+  height: 3em;
+  width: 3em;
+  object-fit: cover;
+}
+
+.dc_app_username {
+  font-weight: bold;
+  font-size: 1.25em;
+  margin: auto 0 auto 0.5em;
+}
+
 img.app_img {
   width: 100%;
   margin-top: 5px;
