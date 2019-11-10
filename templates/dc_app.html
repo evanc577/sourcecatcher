@@ -10,16 +10,22 @@
   </div>
   <p>{{ app_text|e }}</p>
   {% if app_video %}
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
+  <video id="video_youtube-dl" src="{{ app_video|e }}" type="application/x-mpegURL" style="display: none;"></video>
   <video id="video" controls></video>
   <script>
     if (Hls.isSupported()) {
       var video = document.getElementById('video');
       var hls = new Hls();
-      // bind them together
       hls.attachMedia(video);
       hls.on(Hls.Events.MEDIA_ATTACHED, function () {
         hls.loadSource("{{ app_video|e }}");
+      });
+    }
+    else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = '{{ app_video|e }}';
+      video.addEventListener('loadedmetadata',function() {
+        video.play();
       });
     }
   </script>

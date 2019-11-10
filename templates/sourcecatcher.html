@@ -23,9 +23,9 @@
       <div class="inputs">
         <form action="/link">
           {% if url %}
-          <input type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}">
+          <input type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}" onClick="this.select();">
           {% else %}
-          <input type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg">
+          <input type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" onClick="this.select();">
           {% endif %}
           <input id="link_submit_btn" type="submit" value="submit">
         </form>
