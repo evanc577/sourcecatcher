@@ -23,12 +23,27 @@
       <div class="inputs">
         <form action="/link">
           {% if url %}
-          <input type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}" onClick="this.select();">
+          <input type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}">
           {% else %}
-          <input type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" onClick="this.select();">
+          <input type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg">
           {% endif %}
           <input id="link_submit_btn" type="submit" value="submit">
         </form>
+        <script>
+          // hack to select all text on first click
+          var x = document.getElementsByTagName("input")
+          var focusedElement;
+          for (var i = 0; i < x.length; i++) {
+            x[i].onfocus = function() {
+              if (focusedElement == this) return;
+              focusedElement = this;
+              setTimeout(function() { focusedElement.select(); }, 0);
+            };
+            x[i].onblur = function() {
+              focusedElement = null;
+            };
+          }
+        </script>
         <p id="or">OR</p>
         <form action="/upload" method="post" enctype="multipart/form-data">
           <input type="file" name="file" required>
