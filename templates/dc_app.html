@@ -9,8 +9,25 @@
     </div>
   </div>
   <p>{{ app_text|e }}</p>
-  {% for f in app_images %}
-  <img class="app_img" src="{{ f|e }}">
-  {% endfor %}
+  {% if app_video %}
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <video id="video" controls></video>
+  <script>
+    if (Hls.isSupported()) {
+      var video = document.getElementById('video');
+      var hls = new Hls();
+      // bind them together
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MEDIA_ATTACHED, function () {
+        hls.loadSource("{{ app_video|e }}");
+      });
+    }
+  </script>
+  {% endif %}
+  {% if app_images %}
+    {% for f in app_images %}
+    <img class="app_img" src="{{ f|e }}">
+    {% endfor %}
+  {% endif %}
 </div>
 {% endblock results %}

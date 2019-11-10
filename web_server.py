@@ -161,28 +161,37 @@ def dc_app(path):
         error_msg = 'Error: Invalid Dreamcatcher app link'
         raise InvalidDCAppLink
 
-    regex = r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+)"
+    app_images = None
+    app_video = None
 
-    # find all images from app post
-    app = True
+
     source = response.text
     parsed_html = BeautifulSoup(source, features='html.parser')
-    images_html = ''.join([str(h) for h in parsed_html.body.find_all('div', attrs={'class': 'img-box'})])
-    x = re.findall(regex, images_html)
+    regex = r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+)"
 
-    # create urls for full-size images
-    files = []
-    for url in x:
-        temp = url[0]
-        temp = temp.replace('cache/', '')
-        temp = temp.replace('thumb-', '')
-        temp = temp.replace(url[2], '')
-        files.append(temp)
+    try:
+        # try to find video
+        app_video = parsed_html.body.find('video').find('source').attrs['src']
+    except:
+        # find all images from app post
+        app = True
+        images_html = ''.join([str(h) for h in parsed_html.body.find_all('div', attrs={'class': 'img-box'})])
+        x = re.findall(regex, images_html)
+
+        # create urls for full-size images
+        files = []
+        for url in x:
+            temp = url[0]
+            temp = temp.replace('cache/', '')
+            temp = temp.replace('thumb-', '')
+            temp = temp.replace(url[2], '')
+            files.append(temp)
+
+        app_images = list(OrderedDict.fromkeys(files))
 
     # find post username and text
     app_poster = parsed_html.body.find('div', attrs={'class': 'card-name'}).text.strip()
     app_text = parsed_html.body.find('div', attrs={'class': 'card-text'}).text.strip()
-    app_images = list(OrderedDict.fromkeys(files))
 
     # find profile picture
     profile_pic = parsed_html.body.find('div', attrs={'class': 'profile-img'}).find('img').attrs['src']
@@ -197,6 +206,7 @@ def dc_app(path):
         print(f"Error getting full size profile picture {e}")
 
     kwargs = {}
+    kwargs['app_video'] = app_video
     kwargs['app_images'] = app_images
     kwargs['app_poster'] = app_poster
     kwargs['app_text'] = app_text
