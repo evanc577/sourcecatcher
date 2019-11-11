@@ -163,6 +163,7 @@ def dc_app(path):
 
     app_images = None
     app_video = None
+    app_video_poster = None
 
 
     source = response.text
@@ -172,6 +173,7 @@ def dc_app(path):
     try:
         # try to find video
         app_video = parsed_html.body.find('video').find('source').attrs['src']
+        app_video_poster = parsed_html.body.find('video').attrs['poster']
     except:
         # find all images from app post
         app = True
@@ -207,6 +209,7 @@ def dc_app(path):
 
     kwargs = {}
     kwargs['app_video'] = app_video
+    kwargs['app_video_poster'] = app_video_poster
     kwargs['app_images'] = app_images
     kwargs['app_poster'] = app_poster
     kwargs['app_text'] = app_text

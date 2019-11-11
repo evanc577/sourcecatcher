@@ -11,8 +11,7 @@
   <p>{{ app_text|e }}</p>
   {% if app_video %}
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
-  <video id="video_youtube-dl" src="{{ app_video|e }}" type="application/x-mpegURL" style="display: none;"></video>
-  <video id="video" controls></video>
+  <video id="video" src="{{ app_video|e }}" poster="{{ app_video_poster|e }}" type="application/x-mpegURL" controls></video>
   <script>
     if (Hls.isSupported()) {
       var video = document.getElementById('video');
