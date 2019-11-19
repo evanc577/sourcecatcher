@@ -36,3 +36,22 @@ class InvalidImage(SCError):
 
     def __str__(self):
         return "Could not open image (is it actually an image?)"
+
+class DCAppError(SCError):
+
+    def __init__(self, reason):
+        self.reason = reason
+
+    def __str__(self):
+        return f"Could not connect to DC app website ({self.reason})"
+
+class TWError(SCError):
+
+    def __init__(self, message, user=None, tweet_id=None):
+        self.message = message
+        self.link = None
+        if user is not None and tweet_id is not None:
+            self.link = f"https://twitter.com/{user}/status/{tweet_id}"
+
+    def __str__(self):
+        return f"A matching image was found but the tweet no longer exists ({self.message})"

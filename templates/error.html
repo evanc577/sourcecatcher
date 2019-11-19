@@ -3,5 +3,9 @@
 {% block error_msg %}
 <div class="error">
   {{ error_msg|safe }}
+  {% if error_link != None %}
+  <br />
+  <a target="_blank" rel="noopener noreferrer" href="{{ error_link|e }}">{{ error_link|e }}</a>
+  {% endif %}
 </div>
 {% endblock error_msg %}

@@ -138,8 +138,8 @@ def users():
     c = conn.cursor()
     c.execute('SELECT user FROM users')
     users = c.fetchall()
+    c.close()
     users = [tup[0] for tup in sorted(users)]
-    print(users)
     kwargs = {
             'users': users
             }
@@ -151,23 +151,25 @@ def dc_app(path):
     """Get HQ pictures from DC app"""
     # request DC app webpage
     try:
-        response = requests.get(path, timeout=30)
-    except requests.exceptions.MissingSchema:
-        path = 'https://' + path
-        response = requests.get(path, timeout=30)
+        try:
+            response = requests.get(path, timeout=30)
+        except requests.exceptions.MissingSchema:
+            path = 'https://' + path
+            response = requests.get(path, timeout=30)
+    except requests.exceptions.Timeout:
+        raise DCAppError('Request timed out')
 
     if response.status_code != 200:
-        print(response.status_code)
-        error_msg = 'Error: Invalid Dreamcatcher app link'
-        raise InvalidDCAppLink
+        raise DCAppError(f'Error code {response.status_code}')
 
     app_images = None
     app_video = None
     app_video_poster = None
 
-
     source = response.text
     parsed_html = BeautifulSoup(source, features='html.parser')
+
+    # match image urls
     regex = r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+)"
 
     try:
@@ -176,7 +178,6 @@ def dc_app(path):
         app_video_poster = parsed_html.body.find('video').attrs['poster']
     except:
         # find all images from app post
-        app = True
         images_html = ''.join([str(h) for h in parsed_html.body.find_all('div', attrs={'class': 'img-box'})])
         x = re.findall(regex, images_html)
 
@@ -189,6 +190,7 @@ def dc_app(path):
             temp = temp.replace(url[2], '')
             files.append(temp)
 
+        # remove duplicates
         app_images = list(OrderedDict.fromkeys(files))
 
     # find post username and text
@@ -262,6 +264,7 @@ def find_and_render(location, path):
     tweet_id = None
     tweets = []
     error_msg = None
+    error_link = None
     warning_msg = None
     content = None
 
@@ -294,13 +297,17 @@ def find_and_render(location, path):
 
             score_percent = calc_score_percent(score)
 
+            error = None
             try:
                 tweets.append(get_custom_embed(tweet_id, score_percent))
 
                 id_set.add(tweet_id)
                 count += 1
-            except:
-                pass
+            except TWError as e:
+                error = e
+
+            if count == 0 and error is not None:
+                raise error
 
         if count == 0:
             # try content-based search if no matches are found
@@ -320,13 +327,21 @@ def find_and_render(location, path):
 
                     id_set.add(tweet_id)
                     count += 1
-                except:
-                    pass
+                except TWError as e:
+                    error = e
+
+                if count == 0 and error is not None:
+                    raise error
 
             if count == 0:
                 raise NoMatchesFound
             else:
                 warning_msg = "No exact matches found<br /><strong>Experimental:</strong> Showing close matches"
+
+    except TWError as e:
+        error_msg = str(e)
+        error_link = e.link
+        print(e)
 
     except SCError as e:
         error_msg = str(e)
@@ -339,6 +354,7 @@ def find_and_render(location, path):
     kwargs = {
             'tweets': tweets,
             'error_msg': error_msg,
+            'error_link': error_link,
             'warning_msg': warning_msg,
             }
 
@@ -386,7 +402,25 @@ def get_custom_embed(tweet_id, score):
         tweet['images'] = images
 
         return tweet
-    except Exception as e:
+    except tweepy.TweepError as e:
+        print(f"Error creating custom embedded tweet: {e}")
+
+        # get username
+        conn = sqlite3.connect('live/twitter_scraper.db')
+        c = conn.cursor()
+        c.execute('SELECT user FROM info WHERE id=(?)', (tweet_id,))
+        username = c.fetchone()[0]
+        c.close()
+
+        if e.api_code == 63:
+            # account suspended
+            raise TWError('The account was suspended', user=username, tweet_id=tweet_id)
+        elif e.api_code == 144:
+            # tweet doesn't exist
+            raise TWError('The tweet was probably deleted', user=username, tweet_id=tweet_id)
+        raise e
+
+    except tweepy.RateLimitError as e:
         # custom embed failed for some reason, try Twitter's official embed
         print(f"Error creating custom embedded tweet: {e}")
         return get_embed(tweet_id)
