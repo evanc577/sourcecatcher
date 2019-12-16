@@ -14,3 +14,4 @@ scikit-learn
 opencv-python
 opencv-contrib-python
 joblib
+requests-cache

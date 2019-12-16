@@ -7,6 +7,7 @@ from sc_exceptions import *
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import HTTPException
 import requests
+import requests_cache
 import urllib
 import os
 import random
@@ -18,6 +19,7 @@ import yaml
 import tweepy
 from html import escape
 import sqlite3
+from datetime import timedelta, datetime
 
 UPLOAD_FOLDER = 'uploads'
 try:
@@ -69,6 +71,9 @@ tweepy_kwargs = {
         'include_entities': True,
         }
 
+req_expire_after = timedelta(seconds=600)
+cached_req_session = requests_cache.CachedSession('sc_cache', backend='sqlite', expire_after=req_expire_after)
+
 @app.errorhandler(HTTPException)
 @limiter.exempt
 def handle_exception(e):
@@ -103,6 +108,9 @@ def entity_too_large(e):
 
 @app.route('/upload', methods=['POST'])
 def upload():
+    # remove old requests from cache
+    cached_req_session.cache.remove_old_entries(datetime.now() - req_expire_after)
+
     f = request.files['file']
     filename = '{:016x}'.format(random.randint(0, 1<<128))
     path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -121,6 +129,9 @@ def upload():
 @app.route('/')
 @limiter.exempt
 def root():
+    # remove old requests from cache
+    cached_req_session.cache.remove_old_entries(datetime.now() - req_expire_after)
+
     return render_page('sourcecatcher.html')
 
 
@@ -149,13 +160,14 @@ def users():
 
 def dc_app(path):
     """Get HQ pictures from DC app"""
+
     # request DC app webpage
     try:
         try:
-            response = requests.get(path, timeout=30)
+            response = cached_req_session.get(path, timeout=30)
         except requests.exceptions.MissingSchema:
             path = 'https://' + path
-            response = requests.get(path, timeout=30)
+            response = cached_req_session.get(path, timeout=30)
     except requests.exceptions.Timeout:
         raise DCAppError('Request timed out')
 
@@ -235,10 +247,10 @@ def dc_app_image(path):
         # request image link
         if False:
             try:
-                response = requests.get(image_link, timeout=30)
+                response = cached_req_session.get(image_link, timeout=30)
             except requests.exceptions.MissingSchema:
                 image_link = 'https://' + image_link
-                response = requests.get(image_link, timeout=30)
+                response = cached_req_session.get(image_link, timeout=30)
 
             if response.status_code == 200:
                 app_direct_image = True
@@ -433,7 +445,7 @@ def get_embed(tweet_id):
     url = urllib.parse.quote(tweet_source, safe='')
     get_url = 'https://publish.twitter.com/oembed?url={}'.format(url)
 
-    r = requests.get(url=get_url, timeout=30)
+    r = cached_request_session.get(url=get_url, timeout=30)
     tweet['embed_tweet'] = r.json()['html']
     return tweet
 
