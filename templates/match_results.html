@@ -1,15 +1,15 @@
 {% extends "sourcecatcher.html" %}
 
 {% block results %}
+<div class="results_header">
+  <h2>Results</h2>
+</div>
+{% if warning_msg %}
+<div class="warning">
+  {{ warning_msg|safe }}
+</div>
+{% endif %}
 <div class="results">
-  {% if warning_msg %}
-  <div class="warning">
-    {{ warning_msg|safe }}
-  </div>
-  {% endif %}
-  <div class="results_header">
-    <h2>Results</h2>
-  </div>
   {% for tweet in tweets %}
   {% if tweet.custom %}
   <a class="tweet_embed" target="_blank" rel="noopener noreferrer" title="View on Twitter" href="https://twitter.com/{{ tweet.screen_name|e }}/status/{{ tweet.tweet_id }}">

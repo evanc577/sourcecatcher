@@ -1,7 +1,7 @@
 {% extends "sourcecatcher.html" %}
 
 {% block results %}
-<div class="results">
+<div class="dc_app_header">
   <div class="dc_app_user">
     <img class="dc_app_profile_pic" src={{ profile_pic|e }}>
     <div class="dc_app_username">
@@ -9,6 +9,8 @@
     </div>
   </div>
   <p>{{ app_text|e }}</p>
+</div>
+<div class="results">
   {% if app_video %}
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
   <video id="video" src="{{ app_video|e }}" poster="{{ app_video_poster|e }}" type="application/x-mpegURL" controls></video>

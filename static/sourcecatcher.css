@@ -50,7 +50,7 @@ h2 {
 .main {
   padding: 20px;
   margin: auto;
-  width: 50%;
+  width: 95%;
   margin: 0 auto;
 }
 
@@ -86,8 +86,11 @@ input[type=submit] {
 }
 
 .results {
-  max-width: 600px;
   margin: 2em auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 .result {
@@ -102,6 +105,12 @@ input[type=submit] {
 *[id^='twitter-widget-'] {
   margin: 0 auto;
   text-align: left;
+}
+
+.dc_app_header {
+  margin: auto;
+  width: 500px;
+  max-width: 100%;
 }
 
 .dc_app_user {
@@ -123,15 +132,18 @@ input[type=submit] {
 
 #video {
   display: block;
-  width: 100%;
+  width: 500px;
+  max-width: 100%;
   max-height: 95vh;
   margin: auto;
+  box-shadow: 0px 0px 5px lightgray;
 }
 
 img.app_img {
-  width: 100%;
-  margin-top: 5px;
-  margin-bottom: 5px;
+  width: 500px;
+  max-width: 100%;
+  margin: 5px;
+  box-shadow: 0px 0px 5px lightgray;
 }
 
 p.message {
@@ -166,12 +178,12 @@ p.message {
 }
 
 ul.users_list {
-  columns: 2;
-  -webkit-columns: 2;
-  -moz-columns: 2;
+  column-width: 12em;
+  -webkit-column-width: 12em;
+  -moz-column-width: 12em;
   list-style-type: none;
   padding: 0;
-  max-width: 500px;
+  width: 100%;
   margin: 20px auto;
 }
 
