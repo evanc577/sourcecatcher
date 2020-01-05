@@ -6,8 +6,39 @@ html, body {
 }
 
 body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+#dnd-modal {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: none;
+  z-index: 2;
+  
+}
+
+#dnd-modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 500px;
+  max-width: 95%;
+  max-height: 95%;
+  -webkit-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  background-color: white;
+  border-radius: 5px;
+  padding: 30px 10px;
+  text-align: center;
+  font-size: 1.5em;
 }
 
 .banner {

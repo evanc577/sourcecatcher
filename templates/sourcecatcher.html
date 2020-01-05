@@ -9,6 +9,11 @@
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}" />
   </head>
   <body>
+    <div id="dnd-modal">
+      <div id="dnd-modal-content">
+        Drag image here to search
+      </div>
+    </div>
     <div id="content">
     <div class="banner">
       <a href="/"><h1>Sourcecatcher</h1></a>
@@ -23,30 +28,15 @@
       <div class="inputs">
         <form action="/link">
           {% if url %}
-          <input type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}">
+          <input id="link_input" type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}">
           {% else %}
-          <input type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg">
+          <input id="link_input" type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg">
           {% endif %}
           <input id="link_submit_btn" type="submit" value="submit">
         </form>
-        <script>
-          // hack to select all text on first click
-          var x = document.getElementsByTagName("input")
-          var focusedElement;
-          for (var i = 0; i < x.length; i++) {
-            x[i].onfocus = function() {
-              if (focusedElement == this) return;
-              focusedElement = this;
-              setTimeout(function() { focusedElement.select(); }, 0);
-            };
-            x[i].onblur = function() {
-              focusedElement = null;
-            };
-          }
-        </script>
         <p id="or">OR</p>
-        <form action="/upload" method="post" enctype="multipart/form-data">
-          <input type="file" name="file" required>
+        <form id="file_upload_form" action="/upload" method="post" enctype="multipart/form-data">
+          <input id="file_input" type="file" name="file" required>
           <input type="submit" value="submit">
         </form>
       </div>
@@ -71,5 +61,48 @@
       Contact <a target="_blank" rel="noopener noreferrer" title="Contact u/ipwnmice" href="https://www.reddit.com/u/ipwnmice">/u/ipwnmice</a> for more information
       </p>
     </div>
+    <script>
+      // File drag and drop support
+      let body = document.getElementsByTagName('body')[0];
+      let dropPopup = document.getElementById('dnd-modal');
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        body.addEventListener(eventName, preventDefaults, false)
+      });
+      ['dragenter', 'dragover'].forEach(eventName => {
+        body.addEventListener(eventName, show, false)
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        body.addEventListener(eventName, hide, false)
+      });
+      body.addEventListener('drop', handleDrop, false);
+      form = document.getElementById('file_upload_form');
+      input = document.getElementById('file_input');
+      function preventDefaults (e) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+      function hide (e) {
+        dropPopup.style.display = 'none';
+      }
+      function show (e) {
+        dropPopup.style.display = 'block';
+      }
+      function handleDrop(e) {
+        input.files = e.dataTransfer.files;
+        form.submit();
+      }
+
+      // hack to select all text on first click
+      var x = document.getElementById("link_input")
+      var focusedElement;
+      x.onfocus = function() {
+        if (focusedElement == this) return;
+        focusedElement = this;
+        setTimeout(function() { focusedElement.select(); }, 0);
+      };
+      x.onblur = function() {
+        focusedElement = null;
+      };
+    </script>
   </body>
 </html>
