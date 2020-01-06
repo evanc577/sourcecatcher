@@ -56,10 +56,21 @@ body {
   flex: 1 0 auto;
 }
 
-#footer {
+#footer_wrapper {
+  overflow: hidden;
   flex-shrink: 0;
-  padding: 0 20px 0 20px;
+}
+
+#footer {
   background-color: #f0f0f0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin: 0 -5px;
+}
+
+.footer_text {
+  margin: 5px 15px;
 }
 
 h1 {
@@ -173,6 +184,7 @@ input[type=submit] {
 img.app_img {
   width: 500px;
   max-width: 100%;
+  min-height: 20px;
   margin: 5px;
   box-shadow: 0px 0px 5px lightgray;
 }

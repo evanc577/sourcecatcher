@@ -62,16 +62,21 @@
 
     </div>
     </div>
+    <div id="footer_wrapper">
     <div id="footer">
-      <p>
-      Currently indexing {{ num_photos }} photos from {{ num_tweets }} tweets
-      <br>
-      Last updated {{ mtime }} ago
-      <br><br>
-      <a href="twitter_users">View all indexed Twitter users</a>
-      <br><br>
-      Contact <a target="_blank" rel="noopener noreferrer" title="Contact u/ipwnmice" href="https://www.reddit.com/u/ipwnmice">/u/ipwnmice</a> for more information
+      <p class="footer_text">
+      Indexing {{ num_photos }} photos from {{ num_tweets }} tweets
       </p>
+      <p class="footer_text">
+      Last updated {{ mtime }} ago
+      </p>
+      <p class="footer_text">
+      <a href="twitter_users">All indexed Twitter users</a>
+      </p>
+      <p class="footer_text">
+      Contact <a target="_blank" rel="noopener noreferrer" title="Contact u/ipwnmice" href="https://www.reddit.com/u/ipwnmice">/u/ipwnmice</a>
+      </p>
+    </div>
     </div>
     <script>
       // File drag and drop support
