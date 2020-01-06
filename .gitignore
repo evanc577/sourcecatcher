@@ -1,16 +1,23 @@
-# images
-*.png
-*.jpg
-*.jpeg
+# images in root
+/*.png
+/*.jpg
+/*.jpeg
 
 # python virtual environment
-sourcecatcher_venv/
+/sourcecatcher_venv/
+/__pycache__/
 
 # config files
 *.yaml
 
 # misc directories
-live/
-working/
-backups/
-uploads/
+/live/
+/working/
+/backups/
+/uploads/
+
+# database files
+*.sqlite
+*.ann
+*.db
+*.pck
