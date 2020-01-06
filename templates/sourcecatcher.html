@@ -88,8 +88,10 @@
         dropPopup.style.display = 'block';
       }
       function handleDrop(e) {
-        input.files = e.dataTransfer.files;
-        form.submit();
+        if (e.dataTransfer.files && e.dataTransfer.files.length) {
+          input.files = e.dataTransfer.files;
+          form.submit();
+        }
       }
 
       // hack to select all text on first click
