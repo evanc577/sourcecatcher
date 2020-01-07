@@ -80,36 +80,55 @@
     </div>
     <script>
       // File drag and drop support
-      let body = document.getElementsByTagName('body')[0];
+      let enterTarget = null;
       let dropPopup = document.getElementById('dnd-modal');
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        body.addEventListener(eventName, preventDefaults, false)
-      });
-      ['dragenter', 'dragover'].forEach(eventName => {
-        body.addEventListener(eventName, show, false)
-      });
-      ['dragleave', 'drop'].forEach(eventName => {
-        body.addEventListener(eventName, hide, false)
-      });
-      body.addEventListener('drop', handleDrop, false);
-      form = document.getElementById('file_upload_form');
-      input = document.getElementById('file_input');
-      function preventDefaults (e) {
-        e.preventDefault()
-        e.stopPropagation()
-      }
-      function hide (e) {
-        dropPopup.style.display = 'none';
-      }
-      function show (e) {
-        dropPopup.style.display = 'block';
-      }
-      function handleDrop(e) {
-        if (e.dataTransfer.files && e.dataTransfer.files.length) {
-          input.files = e.dataTransfer.files;
-          form.submit();
+      let form = document.getElementById('file_upload_form');
+      let input = document.getElementById('file_input');
+
+      function containsFiles(event) {
+        if (event.dataTransfer.types) {
+          for (var i = 0; i < event.dataTransfer.types.length; i++) {
+            if (event.dataTransfer.types[i] == "Files") {
+              return true;
+            }
+          }
         }
-      }
+        return false;
+      };
+      document.ondragenter = function(event) {
+        if (containsFiles(event)) {
+          event.stopPropagation();
+          event.preventDefault();
+          enterTarget = event.target;
+          dropPopup.style.display = 'block';
+        }
+      };
+      document.ondragleave = function(event) {
+        if (containsFiles(event)) {
+          event.stopPropagation();
+          event.preventDefault();
+          //Only if the two target are equal it means the drag has left the window
+          if (enterTarget == event.target){
+            dropPopup.style.display = 'none';
+          }
+        }
+      };
+      document.ondragover = function(event) {
+        if (containsFiles(event)) {
+          event.preventDefault();
+        }
+      };
+      document.ondrop = function(event) {
+        if (containsFiles(event)) {
+          event.stopPropagation();
+          event.preventDefault();
+          dropPopup.style.display = 'none';
+          if (event.dataTransfer.files && event.dataTransfer.files.length) {
+            input.files = event.dataTransfer.files;
+            form.submit();
+          }
+        }
+      };
 
       // hack to select all text on first click
       var x = document.getElementById("link_input")
