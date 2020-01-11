@@ -13,6 +13,8 @@ import shutil
 import piexif
 from PIL import Image
 import io
+from itertools import islice
+import time
 
 def mkdir(time_str):
     """create a directory for a given time
@@ -132,13 +134,6 @@ if __name__ == "__main__":
 
     api = tweepy.API(auth)
 
-    tweepy_kwargs = {
-            'compression': False,
-            'tweet_mode': 'extended',
-            'count': 200,
-            'exclude_replies': False,
-            'include_rts': True,
-            }
 
     conn = sqlite3.connect('working/twitter_scraper.db')
     c = conn.cursor()
@@ -149,7 +144,37 @@ if __name__ == "__main__":
 
     count = 0
 
+    # add individual tweets to database
+    n = 100 # number of ids per statuses_lookup api call, 100 max
+    tweepy_kwargs = {
+            'tweet_mode': 'extended',
+            }
+    try:
+        with open('add_tweets.txt', 'r') as f:
+            new_tweets = False
+            while True:
+                ids = [x.strip() for x in islice(f, n)]
+                if not ids:
+                    break
+                new_tweets = True
+                tweets = api.statuses_lookup(ids, **tweepy_kwargs)
+                for tweet in tweets:
+                    tweet = tweet._json
+                    # download tweet media
+                    download_tweet_media(tweet)
+            if new_tweets:
+                os.rename('add_tweets.txt', f'add_tweets.txt.{str(int(time.time()))}' )
+    except FileNotFoundError:
+        pass
+
     # download linked media for all users
+    tweepy_kwargs = {
+            'compression': False,
+            'tweet_mode': 'extended',
+            'count': 200,
+            'exclude_replies': False,
+            'include_rts': True,
+            }
     for user in users:
         print('Checking {} for new tweets'.format(user))
         user = user.lower()
