@@ -31,6 +31,8 @@ ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024
+app.jinja_env.trim_blocks = True
+app.jinja_env.lstrip_blocks = True
 
 limiter = Limiter(
     app,
@@ -278,6 +280,7 @@ def find_and_render(location, path):
     tweet_id = None
     tweets = []
     error_msg = None
+    error_reasons = None
     error_link = None
     warning_msg = None
     content = None
@@ -357,6 +360,11 @@ def find_and_render(location, path):
         error_link = e.link
         print(e)
 
+    except NoMatchesFound as e:
+        error_msg = str(e)
+        error_reasons = e.reasons()
+        print(e)
+
     except SCError as e:
         error_msg = str(e)
         print(e)
@@ -368,6 +376,7 @@ def find_and_render(location, path):
     kwargs = {
             'tweets': tweets,
             'error_msg': error_msg,
+            'error_reasons': error_reasons,
             'error_link': error_link,
             'warning_msg': warning_msg,
             }

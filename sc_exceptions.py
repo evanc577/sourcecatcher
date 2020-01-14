@@ -23,7 +23,18 @@ class NoMatchesFound(SCError):
     """Raised when no matching images are found"""
 
     def __str__(self):
-        return "No matches found"
+        return "No matches found. Possible reasons:"
+
+    def reasons(self):
+        reasons = [
+                "Twitter is not the source of this image",
+                "Sourcecatcher is not following the source Twitter user",
+                "The image was heavily altered or cropped",
+                "The source Twitter user deleted the tweet before Sourcecatcher analyzed it",
+                "The source Twitter user tweeted more than 3200 times since the source tweet",
+                "Sourcecatcher messed up",
+                ]
+        return reasons
 
 class InvalidLink(SCError):
     """Raised when an invalid link is used"""

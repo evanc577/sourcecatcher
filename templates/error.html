@@ -7,5 +7,12 @@
   <br />
   <a target="_blank" rel="noopener noreferrer" href="{{ error_link|e }}">{{ error_link|e }}</a>
   {% endif %}
+  {% if error_reasons != None %}
+  <ul class="error_reasons">
+  {% for reason in error_reasons %}
+    <li>{{ reason|e }}</li>
+  {% endfor %}
+  </ul>
+  {% endif %}
 </div>
 {% endblock error_msg %}
