@@ -89,6 +89,12 @@ h2 {
   margin: 0 auto;
 }
 
+h3 {
+    font-weight: normal;
+    text-align: center;
+    margin-bottom: 0;
+}
+
 .main {
   padding: 20px;
   margin: auto;
@@ -106,33 +112,81 @@ h2 {
 .inputs {
   max-width: 600px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.search_wrap {
+  box-shadow: 0 2px 3px rgba(0,0,0,0.06);
+  margin: auto;
+  width: 500px;
+  max-width: 100%;
 }
 
 form {
-  margin: 1em auto;
-  display: block;
   text-align: center;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+#link_input {
+  width: 100%;
+  padding: 10px;
+  float: left;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  border-left: 1px solid lightgray;
+  border-top: 1px solid lightgray;
+  border-bottom: 1px solid lightgray;
+  border-right: none;
+  background-color: #fcfcfc;
+}
+
+#link_submit_btn {
+  border-top: 1px solid lightgray;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+  border-right: 1px solid lightgray;
+  border-bottom: 1px solid lightgray;
+  float: left;
+  color: white;
+  border-left: none;
+  cursor: pointer;
+  background-color: #fcfcfc;
+}
+
+#link_submit_btn:hover {
+  background-color: #F2C763;
+}
+
+#link_submit_btn:hover svg * {
+  stroke: #fff;
+}
+
+#search_icon {
+  width: 1.5em;
 }
 
 input[type=text] {
   box-sizing: border-box;
-  width: 400px;
-}
-
-input[type=submit] {
-  margin-top: 10px;
 }
 
 #or {
   text-align: center;
 }
 
+.results_header {
+  margin-top: 2em;
+}
+
 .results {
-  margin: 2em auto;
+  margin: 0 auto 2em auto;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: flex-start;
+  width: max-content;
 }
 
 .result {
@@ -221,9 +275,10 @@ p.message {
 }
 
 ul.users_list {
-  column-width: 12em;
-  -webkit-column-width: 12em;
-  -moz-column-width: 12em;
+  column-width: 10em;
+  -webkit-column-width: 10em;
+  -moz-column-width: 10em;
+  column-count: 8;
   list-style-type: none;
   padding: 0;
   width: 100%;
@@ -232,9 +287,9 @@ ul.users_list {
 
 @media screen and (max-width: 800px) {
   h1 {
-    font-size: 2em;
     font-size: 10vw;
     text-align: center;
+    position: relative;
   }
 
   .main {
@@ -242,23 +297,16 @@ ul.users_list {
     padding: 0;
   }
 
-  input {
-    font-size: 1.25em;
-  }
-
   input[type=text] {
-    width: 100%;
+    max-width: 100%;
   }
 
   input[type=file] {
-    width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
   }
 
-  #link_submit_btn {
-    margin-top: 0.5em;
-  }
 }
 

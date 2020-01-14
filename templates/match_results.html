@@ -14,7 +14,7 @@
   {% if tweet.custom %}
   <a class="tweet_embed" target="_blank" rel="noopener noreferrer" title="View on Twitter" href="https://twitter.com/{{ tweet.screen_name|e }}/status/{{ tweet.tweet_id }}">
     <div class="match_score">Match Score: {{ tweet.score }}</div>
-    <img class="twitter_logo" src="static/Twitter_Logo_Blue.svg">
+    <img class="twitter_logo" src="{{ url_for('static', filename='Twitter_Logo_Blue.svg') }}">
     <div class="author">
       <img class="avatar" alt="Avatar" src="{{ tweet.profile_image|e }}">
       <div class="name_container">

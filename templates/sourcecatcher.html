@@ -38,18 +38,27 @@
 
       {% block forms %}
       <div class="inputs">
-        <form action="/link">
-          {% if url %}
-          <input id="link_input" type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}">
-          {% else %}
-          <input id="link_input" type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg">
-          {% endif %}
-          <input id="link_submit_btn" type="submit" value="submit">
-        </form>
+        <div class="search_wrap">
+          <form action="/link">
+            {% if url %}
+            <input id="link_input" type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}">
+            {% else %}
+            <input id="link_input" type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg">
+            {% endif %}
+            <button id="link_submit_btn" type="submit" value="submit">
+              <svg id="search_icon" viewBox="0 0 30 30" fill="none" stroke="#999" stroke-width="2">
+                <circle cx="13" cy="13" r="9"/>
+                <path d="M26 26l-6.563-6.563" stroke-linecap="round" stroke-miterlimit="10"/>
+              </svg>
+            </button>
+          </form>
+        </div>
         <p id="or">OR</p>
         <form id="file_upload_form" action="/upload" method="post" enctype="multipart/form-data">
           <input id="file_input" type="file" name="file" required>
-          <input type="submit" value="submit">
+          <button type="submit" value="submit">
+            Upload
+          </button>
         </form>
       </div>
       {% endblock forms %}

@@ -151,8 +151,10 @@ def users():
     users = c.fetchall()
     c.close()
     users = [tup[0] for tup in sorted(users)]
+    user_count = len(users)
     kwargs = {
-            'users': users
+            'users': users,
+            'user_count': user_count,
             }
 
     return render_page('twitter_users.html', **kwargs)
