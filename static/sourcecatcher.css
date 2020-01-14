@@ -118,7 +118,7 @@ h3 {
 
 .search_wrap {
   box-shadow: 0 2px 3px rgba(0,0,0,0.06);
-  margin: auto;
+  margin: 10px auto;
   width: 500px;
   max-width: 100%;
 }
@@ -132,6 +132,10 @@ form {
 
 #file_upload_form {
   flex-wrap: wrap;
+}
+
+#file_upload_form * {
+  margin: 10px;
 }
 
 #link_input {
