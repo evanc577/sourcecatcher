@@ -111,7 +111,7 @@ h3 {
 
 .inputs {
   max-width: 600px;
-  margin: 0 auto;
+  margin: 2em auto;
   display: flex;
   flex-direction: column;
 }
