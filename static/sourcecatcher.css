@@ -130,6 +130,10 @@ form {
   width: 100%;
 }
 
+#file_upload_form {
+  flex-wrap: wrap;
+}
+
 #link_input {
   width: 100%;
   padding: 10px;
