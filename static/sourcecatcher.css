@@ -186,7 +186,6 @@ input[type=text] {
   flex-wrap: wrap;
   justify-content: center;
   align-items: flex-start;
-  width: max-content;
 }
 
 .result {
@@ -295,6 +294,10 @@ ul.users_list {
   .main {
     width: 95%;
     padding: 0;
+  }
+
+  input {
+    font-size: 1.25em;
   }
 
   input[type=text] {
