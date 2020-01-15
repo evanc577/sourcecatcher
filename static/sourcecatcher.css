@@ -95,6 +95,14 @@ h3 {
     margin-bottom: 0;
 }
 
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
 .main {
   padding: 20px;
   margin: auto;
@@ -294,7 +302,6 @@ ul.users_list {
   column-count: 8;
   list-style-type: none;
   padding: 0;
-  width: 100%;
   margin: 20px auto;
 }
 
