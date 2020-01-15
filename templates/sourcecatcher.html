@@ -41,9 +41,9 @@
         <div class="search_wrap">
           <form action="/link">
             {% if url %}
-            <input id="link_input" type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}">
+            <input id="link_input" type="url" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}" autocomplete="url">
             {% else %}
-            <input id="link_input" type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg">
+            <input id="link_input" type="url" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" autocomplete="url">
             {% endif %}
             <button id="link_submit_btn" type="submit" value="submit">
               <svg id="search_icon" viewBox="0 0 30 30" fill="none" stroke="#999" stroke-width="2">
@@ -55,10 +55,28 @@
         </div>
         <p id="or">OR</p>
         <form id="file_upload_form" action="/upload" method="post" enctype="multipart/form-data">
-          <input id="file_input" type="file" name="file" required>
-          <button type="submit" value="submit">
-            Upload
-          </button>
+          <input id="file_input" type="file" name="file" required onchange="form.submit();">
+          <label for="file_input" id="file_input_label"/>Upload an image</label>
+          <script>
+            // show pretty file upload form if js is available
+            var file_input = document.getElementById('file_input');
+            var file_input_label = document.getElementById('file_input_label');
+            file_input.style.width = '1px';
+            file_input.style.height = '1px';
+            file_input.style.overflow = 'hidden';
+            file_input.style.clip = 'rect(0,0,0,0)';
+            file_input.style.padding = '0';
+            file_input.style.position = 'absoulute !important';
+            file_input.style.whiteSpace = 'nowrap';
+            file_input.style.border = 0;
+            file_input.style.opacity = 0;
+            file_input_label.style.display = 'inline-block';
+          </script>
+          <noscript>
+            <button type="submit" value="submit">
+              Upload
+            </button>
+          </noscript>
         </form>
       </div>
       {% endblock forms %}

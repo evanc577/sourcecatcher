@@ -140,10 +140,35 @@ form {
 
 #file_upload_form {
   flex-wrap: wrap;
+  margin: 10px auto;
 }
 
-#file_upload_form * {
-  margin: 10px;
+[type="file"] {
+}
+
+[type="file"] + label {
+  border: 1px solid lightgray;
+  border-radius: 5px;
+  box-shadow: 0 2px 3px rgba(0,0,0,0.06);
+  cursor: pointer;
+  display: none;
+	font-size: inherit;
+  margin-bottom: 1rem;
+  outline: none;
+  padding: 10px 20px;
+  position: relative;
+  vertical-align: middle;
+}
+
+[type="file"]:focus + label,
+[type="file"] + label:hover {
+  background-color: #F2C763;
+  color: #fff;
+}
+
+[type="file"]:focus + label {
+  outline: 1px dotted #000;
+  outline: -webkit-focus-ring-color auto 5px;
 }
 
 #link_input {
@@ -172,6 +197,7 @@ form {
   background-color: #fcfcfc;
 }
 
+#link_submit_btn:focus,
 #link_submit_btn:hover {
   background-color: #F2C763;
 }
