@@ -20,6 +20,7 @@ import tweepy
 from html import escape
 import sqlite3
 from datetime import timedelta, datetime
+import hashlib
 
 UPLOAD_FOLDER = 'uploads'
 try:
@@ -33,6 +34,16 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
+
+
+# calculate sha256 hash for file
+def sha256(filename):
+    filename = os.getcwd() + filename
+    with open(filename,"rb") as f:
+        bytes = f.read() # read entire file as bytes
+        return hashlib.sha256(bytes).hexdigest();
+
+app.jinja_env.globals.update(sha256=sha256)
 
 limiter = Limiter(
     app,
