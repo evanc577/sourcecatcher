@@ -215,6 +215,7 @@ input[type=text] {
 
 #or {
   text-align: center;
+  margin: 0;
 }
 
 .results_header {
@@ -346,11 +347,11 @@ ul.users_list {
   }
 
   input {
-    font-size: 1.25em;
+    font-size: 1em;
   }
 
   button {
-    font-size: 1.25em;
+    font-size: 1em;
   }
 
   input[type=text] {
