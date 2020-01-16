@@ -28,10 +28,16 @@
     </div>
     <div class="datetime">
       <script>datetime = new Date("{{ tweet.ts }}");
-        datestr = datetime.toLocaleDateString();
-timestr = datetime.toLocaleTimeString();
-datetimestr = timestr + " - " + datestr;
-document.write(datetimestr)
+        var locale;
+        if (window.navigator.languages) {
+            locale = window.navigator.languages[0];
+        } else {
+            locale = window.navigator.userLanguage || window.navigator.language;
+        }
+        var datestr = datetime.toLocaleDateString(locale);
+        var timestr = datetime.toLocaleTimeString(locale);
+        var datetimestr = timestr + " - " + datestr;
+        document.write(datetimestr)
       </script>
     </div>
     <div class="tweet_text">
