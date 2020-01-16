@@ -143,9 +143,6 @@ form {
   margin: 10px auto;
 }
 
-[type="file"] {
-}
-
 [type="file"] + label {
   border: 1px solid lightgray;
   border-radius: 5px;
@@ -197,11 +194,13 @@ form {
   background-color: #fcfcfc;
 }
 
+#link_submit_btn.highlight_search,
 #link_submit_btn:focus,
 #link_submit_btn:hover {
   background-color: #F2C763;
 }
 
+.highlight_search svg *,
 #link_submit_btn:hover svg * {
   stroke: #fff;
 }

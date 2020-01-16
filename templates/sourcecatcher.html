@@ -41,9 +41,9 @@
         <div class="search_wrap">
           <form action="/link">
             {% if url %}
-            <input id="link_input" type="url" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}" autocomplete="url">
+            <input id="link_input" type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" value="{{ url|e }}" autocomplete="url">
             {% else %}
-            <input id="link_input" type="url" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" autocomplete="url">
+            <input id="link_input" type="text" name="url" required placeholder="https://i.imgur.com/QQDz93b.jpg" autocomplete="url">
             {% endif %}
             <button id="link_submit_btn" type="submit" value="submit">
               <svg id="search_icon" viewBox="0 0 30 30" fill="none" stroke="#999" stroke-width="2">
@@ -158,16 +158,30 @@
       };
 
       // hack to select all text on first click
-      var x = document.getElementById("link_input")
+      var link_input = document.getElementById("link_input")
       var focusedElement;
-      x.onfocus = function() {
+      link_input.onfocus = function() {
         if (focusedElement == this) return;
         focusedElement = this;
         setTimeout(function() { focusedElement.select(); }, 0);
       };
-      x.onblur = function() {
+      link_input.onblur = function() {
         focusedElement = null;
       };
+
+      // change search button color automatically
+      var search_button = document.getElementById("link_submit_btn")
+      function text_input_change() {
+        if (link_input.value.length == 0) {
+          search_button.classList.remove('highlight_search');
+        } else {
+          search_button.classList.add('highlight_search');
+        }
+      }
+      ['input','keyup', 'keydown', 'paste', 'change'].forEach(e => 
+          link_input.addEventListener(e, text_input_change, false)
+      );
+      text_input_change();
     </script>
   </body>
 </html>
