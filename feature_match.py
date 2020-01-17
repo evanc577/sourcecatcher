@@ -160,7 +160,7 @@ def gen_cbir():
         for r in pool.imap(compute_histograms, files, chunksize=64):
             if not isinstance(r, Exception):
                 index.add_item(r[0], r[2])
-    index.build(20)
+    index.build(50)
     index.save('working/BOW_index.ann')
 
     # save index map

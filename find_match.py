@@ -46,7 +46,7 @@ def find(location, path, content=None):
     n = 16
     n_trees = index.get_n_trees()
     ann_start_time = time.time()
-    annoy_results = index.get_nns_by_vector(phash_arr, n, include_distances=True, search_k=100*n*n_trees)
+    annoy_results = index.get_nns_by_vector(phash_arr, n, include_distances=True, search_k=1000*n*n_trees)
     ann_end_time = time.time()
 
     # look up the location of the match and its tweet info

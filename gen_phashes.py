@@ -99,7 +99,7 @@ def gen_phash():
 
     conn.commit()
 
-    index.build(20)
+    index.build(50)
     index.save('working/phash_index.ann')
 
 
