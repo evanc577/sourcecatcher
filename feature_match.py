@@ -19,7 +19,7 @@ def extract_features(f, des_length=2048):
     try:
         idx = f[0]
         path = f[1]
-        print(f'idx={idx:08d} path={path}')
+        print(f'features: idx={idx:08d} path={path}')
 
         img = cv2.imread(path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -35,13 +35,10 @@ def extract_features(f, des_length=2048):
         print(e)
         return e
 
-def compute_histograms(f):
+def compute_histograms(idx, path, des):
     """Compute histograms for bag of (visual) words"""
     try:
-        idx = f[0]
-        path = f[1][0]
-        des = f[1][1]
-        print(f'idx={idx:08d} path={path}')
+        print(f'histograms: idx={idx:08d} path={path}')
         indices = kmeans.predict(des)
         hist = np.zeros(kmeans.cluster_centers_.shape[0], dtype=np.float32)
         for i in indices:
@@ -71,6 +68,10 @@ def gen_cbir():
         num_cpus = config['cpus']
     except KeyError:
         num_cpus = cpu_count()
+    try:
+        recalculate_kmeans = config['recalculate_kmeans']
+    except KeyError:
+        recalculate_kmeans = True
 
     # connect to sqlite database
     conn = sqlite3.connect('working/twitter_scraper.db')
@@ -102,41 +103,47 @@ def gen_cbir():
                 descriptors[r[1]] = r[2]
                 new_descriptors[r[1]] = r[2]
 
-    # create clusters
-    try:
+    if recalculate_kmeans:
+        # create clusters
+        try:
+            kmeans = joblib.load('working/kmeans.pkl')
+            n_clusters = kmeans.cluster_centers_.shape[0]
+        except:
+            n_clusters = 512
+            kmeans = MiniBatchKMeans(n_clusters=n_clusters, batch_size=2048)
+
+        # calculate kmeans
+        cur = None
+        for i,des in enumerate(new_descriptors.items()):
+            if des[1] is not None:
+                print(f'calculating kmeans, image: {i:08d}')
+                if des[1].shape[0] < n_clusters:
+                    if cur is None:
+                        cur = des[1]
+                    else:
+                        cur = np.concatenate((cur, des[1]), axis=0)
+                    if cur is not None and cur.shape[0] > n_clusters:
+                        kmeans = kmeans.partial_fit(np.float32(cur))
+                        cur = None
+                else:
+                    if cur is not None:
+                        cur = np.concatenate((cur, des[1]), axis=0)
+                        kmeans = kmeans.partial_fit(np.float32(cur))
+                        cur = None
+                    else:
+                        kmeans = kmeans.partial_fit(np.float32(des[1]))
+        if cur is not None:
+            kmeans = kmeans.partial_fit(np.float32(cur))
+
+        # save kmeans
+        joblib.dump(kmeans, 'working/kmeans.pkl')
+    else:
         kmeans = joblib.load('working/kmeans.pkl')
         n_clusters = kmeans.cluster_centers_.shape[0]
-    except:
-        n_clusters = 512
-        kmeans = MiniBatchKMeans(n_clusters=n_clusters, batch_size=2048)
-
-    # calculate kmeans
-    cur = None
-    for i,des in enumerate(new_descriptors.items()):
-        if des[1] is not None:
-            print(f'calculating kmeans, image: {i:08d}')
-            if des[1].shape[0] < n_clusters:
-                if cur is None:
-                    cur = des[1]
-                else:
-                    cur = np.concatenate((cur, des[1]), axis=0)
-                if cur is not None and cur.shape[0] > n_clusters:
-                    kmeans = kmeans.partial_fit(np.float32(cur))
-                    cur = None
-            else:
-                if cur is not None:
-                    cur = np.concatenate((cur, des[1]), axis=0)
-                    kmeans = kmeans.partial_fit(np.float32(cur))
-                    cur = None
-                else:
-                    kmeans = kmeans.partial_fit(np.float32(des[1]))
-    if cur is not None:
-        kmeans = kmeans.partial_fit(np.float32(cur))
 
 
-    # save descriptors and kmeans
+    # save descriptors
     joblib.dump(descriptors, 'working/descriptors.pkl')
-    joblib.dump(kmeans, 'working/kmeans.pkl')
 
     # set up structures for annoy index
     c.execute('SELECT path, filename FROM info')
@@ -145,21 +152,20 @@ def gen_cbir():
     for f in all_images:
         fullpath = os.path.join(f[0], f[1])
         if fullpath in descriptors:
-            files.append((fullpath, descriptors[fullpath]))
+            files.append(fullpath)
     max_idx = len(files)
     BOW_annoy_map = {}
     enum_files = enumerate(files)
     for i,f in enum_files:
-        BOW_annoy_map[i] = f[0]
+        BOW_annoy_map[i] = f
 
     index = AnnoyIndex(n_clusters, 'angular')
 
     # add histograms to annoy index
-    files = enumerate(files)
-    with Pool(processes=num_cpus) as pool:
-        for r in pool.imap(compute_histograms, files, chunksize=64):
-            if not isinstance(r, Exception):
-                index.add_item(r[0], r[2])
+    for i,f in enumerate(files):
+        r = compute_histograms(i, f, descriptors[f])
+        if not isinstance(r, Exception):
+            index.add_item(r[0], r[2])
     index.build(20)
     index.save('working/BOW_index.ann')
 
