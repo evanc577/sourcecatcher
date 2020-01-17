@@ -48,7 +48,7 @@ app.jinja_env.globals.update(sha256=sha256)
 limiter = Limiter(
     app,
     key_func=get_remote_address,
-    default_limits=["10 per minute", "1 per second"],
+    default_limits=["30 per minute", "1 per second"],
 )
 
 
@@ -289,6 +289,7 @@ def find_and_render(location, path):
     app_direct_image = False
     basename = None
     tweet_id = None
+    tweet_ids = []
     tweets = []
     error_msg = None
     error_reasons = None
@@ -316,20 +317,20 @@ def find_and_render(location, path):
         elif location == 'file':
             found = find('file', path)
 
-        id_set = set()
+        id_score = {}
         count = 0
         for candidate in found:
             score, tweet_id, basename = candidate
-            if tweet_id in id_set:
+            if tweet_id in id_score:
                 continue
 
             score_percent = calc_score_percent(score)
 
             error = None
             try:
-                tweets.append(get_custom_embed(tweet_id, score_percent))
+                tweet_ids.append(str(tweet_id))
 
-                id_set.add(tweet_id)
+                id_score[tweet_id] = score_percent
                 count += 1
             except TWError as e:
                 error = e
@@ -343,17 +344,16 @@ def find_and_render(location, path):
                 found = find_similar(path, location='url', content=content)
             elif location == 'file':
                 found = find_similar(path, location='file')
-            id_set = set()
             count = 0
             for candidate in found:
                 score, tweet_id, basename = candidate
-                if tweet_id in id_set:
+                if tweet_id in id_score:
                     continue
 
                 try:
-                    tweets.append(get_custom_embed(tweet_id, score))
+                    tweet_ids.append(str(tweet_id))
 
-                    id_set.add(tweet_id)
+                    id_score[tweet_id] = score
                     count += 1
                 except TWError as e:
                     error = e
@@ -384,6 +384,45 @@ def find_and_render(location, path):
         error_msg = "An unknown error occurred"
         print(e)
 
+    if len(tweet_ids) != 0:
+        tweepy_kwargs = {
+                'tweet_mode': 'extended',
+                }
+
+        todo_ids = set()
+        for tweet_id in tweet_ids:
+            todo_ids.add(tweet_id.strip())
+
+        # create tweet cards
+        try:
+            lookedup_tweets = sorted(api.statuses_lookup(tweet_ids, **tweepy_kwargs),
+                    key=lambda x: (-id_score[x._json['id']], x._json['id']))
+            for lookedup_tweet in lookedup_tweets:
+                lookedup_tweet = lookedup_tweet._json
+                score = id_score[lookedup_tweet['id']]
+                tweets.append(get_custom_embed(lookedup_tweet, score))
+                try:
+                    todo_ids.remove(str(lookedup_tweet['id']))
+                except KeyError:
+                    pass
+        except tweepy.RateLimitError as e:
+            for tweet_id in tweet_ids:
+                tweets.append(get_embed(tweet_id))
+                try:
+                    todo_ids.remove(str(lookedup_tweet['id']))
+                except KeyError:
+                    pass
+
+        # add tweets that have been removed
+        for tweet_id in todo_ids:
+            tweets.append(get_saved_tweet(tweet_id, id_score[int(tweet_id)]))
+
+    # show error if no tweets are found
+    if len(tweets) == 0:
+        e = NoMatchesFound()
+        error_msg = str(e)
+        error_reasons = e.reasons()
+
     kwargs = {
             'tweets': tweets,
             'error_msg': error_msg,
@@ -395,6 +434,7 @@ def find_and_render(location, path):
     if location == 'url':
         kwargs['url'] = path
 
+
     # found some matches
     if len(tweets) != 0:
         return render_page('match_results.html', **kwargs)
@@ -402,62 +442,62 @@ def find_and_render(location, path):
     # did not find any matches
     return render_page('error.html', **kwargs)
 
-def get_custom_embed(tweet_id, score):
+def get_saved_tweet(tweet_id, score):
+    """
+    Create tweet embed from saved data
+    """
+    conn = sqlite3.connect('live/twitter_scraper.db')
+    c = conn.cursor()
+
+    tweet = {}
+    tweet['custom'] = True
+    tweet['is_backup'] = True
+    tweet['score'] = score
+    tweet['tweet_id'] = tweet_id
+
+    c.execute('SELECT * FROM tweet_text where id=(?)', (tweet_id,))
+    _, text = c.fetchone()
+    tweet['text_html'] = re.sub(r"https://t\.co/\w+$", "", text)
+
+    images = []
+    c.execute('SELECT * FROM info where id=(?)', (tweet_id,))
+    info = c.fetchone()
+    tweet['screen_name'] = info[2]
+
+    return tweet
+
+
+def get_custom_embed(lookedup_tweet, score):
     """
     Create a custom embedded tweet
     """
 
     tweet = {}
     tweet['custom'] = True
-    tweet['tweet_id'] = tweet_id
+    tweet['tweet_id'] = lookedup_tweet['id']
     tweet['score'] = score
-    try:
-        # get tweet contents
-        status = api.get_status(tweet_id, **tweepy_kwargs)
 
-        # process tweet text
-        display_range = status._json['display_text_range']
-        tweet['text_html'] = status._json['full_text'][display_range[0]:display_range[1]]
+    # process tweet text
+    display_range = lookedup_tweet['display_text_range']
+    tweet['text_html'] = lookedup_tweet['full_text'][display_range[0]:display_range[1]]
 
-        # process name
-        tweet['screen_name'] = status._json['user']['screen_name']
-        tweet['identity_name'] = status._json['user']['name']
-        tweet['profile_image'] = status._json['user']['profile_image_url_https']
+    # process name
+    tweet['screen_name'] = lookedup_tweet['user']['screen_name']
+    tweet['identity_name'] = lookedup_tweet['user']['name']
+    tweet['profile_image'] = lookedup_tweet['user']['profile_image_url_https']
 
-        # process time
-        tweet['ts'] = status._json['created_at']
+    # process time
+    tweet['ts'] = lookedup_tweet['created_at']
 
-        # process tweet images
-        media = status._json['extended_entities']['media']
-        tweet['num_media'] = len(media)
-        images = []
-        for m in media:
-            images.append(m['media_url_https'])
-        tweet['images'] = images
+    # process tweet images
+    media = lookedup_tweet['extended_entities']['media']
+    tweet['num_media'] = len(media)
+    images = []
+    for m in media:
+        images.append(m['media_url_https'])
+    tweet['images'] = images
 
-        return tweet
-    except tweepy.TweepError as e:
-        print(f"Error creating custom embedded tweet: {e}")
-
-        # get username
-        conn = sqlite3.connect('live/twitter_scraper.db')
-        c = conn.cursor()
-        c.execute('SELECT user FROM info WHERE id=(?)', (tweet_id,))
-        username = c.fetchone()[0]
-        c.close()
-
-        if e.api_code == 63:
-            # account suspended
-            raise TWError('The account was suspended', user=username, tweet_id=tweet_id)
-        elif e.api_code == 144:
-            # tweet doesn't exist
-            raise TWError('The tweet was probably deleted', user=username, tweet_id=tweet_id)
-        raise e
-
-    except tweepy.RateLimitError as e:
-        # custom embed failed for some reason, try Twitter's official embed
-        print(f"Error creating custom embedded tweet: {e}")
-        return get_embed(tweet_id)
+    return tweet
 
 def get_embed(tweet_id):
     """get html for an embedded tweet"""
@@ -467,7 +507,7 @@ def get_embed(tweet_id):
     url = urllib.parse.quote(tweet_source, safe='')
     get_url = 'https://publish.twitter.com/oembed?url={}'.format(url)
 
-    r = cached_request_session.get(url=get_url, timeout=30)
+    r = cached_req_session.get(url=get_url, timeout=30)
     tweet['embed_tweet'] = r.json()['html']
     return tweet
 

@@ -13,10 +13,17 @@
   {% for tweet in tweets %}
   {% if tweet.custom %}
   <a class="tweet_embed" target="_blank" rel="noopener noreferrer" title="View on Twitter" href="https://twitter.com/{{ tweet.screen_name|e }}/status/{{ tweet.tweet_id }}">
-    <div class="match_score">Match Score: {{ tweet.score }}</div>
+    <div class="match_score">Similarity: {{ tweet.score }}</div>
+    {% if tweet.is_backup %}
+    <div class="warning backup_tweet">This tweet is no longer available</div>
+    {% endif %}
     <img class="twitter_logo" src="{{ url_for('static', filename='Twitter_Logo_Blue.svg') }}">
     <div class="author">
-      <img class="avatar" alt="Avatar" src="{{ tweet.profile_image|e }}">
+      {% if tweet.is_backup %}
+      <img class="avatar" src="{{ url_for('static', filename='user_profile.png') }}">
+      {% else %}
+      <img class="avatar" src="{{ tweet.profile_image|e }}">
+      {% endif %}
       <div class="name_container">
         <span class="identity_name">
           {{ tweet.identity_name|e }}
@@ -26,6 +33,7 @@
         </span>
       </div>
     </div>
+    {% if tweet.ts %}
     <div class="datetime">
       <script>datetime = new Date("{{ tweet.ts }}");
         var locale;
@@ -40,6 +48,7 @@
         document.write(datetimestr)
       </script>
     </div>
+    {% endif %}
     <div class="tweet_text">
       <p style="white-space: pre-wrap">{{ tweet.text_html|e }}</p>
     </div>

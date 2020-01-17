@@ -117,3 +117,7 @@ a.tweet_embed div.match_score {
   font-size: 1em;
   color: #697882;
 }
+
+.backup_tweet {
+  margin: 20px 20px 0 20px;
+}
