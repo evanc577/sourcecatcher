@@ -41,6 +41,7 @@ def image_detect_and_compute(img_name, location='file', content=None):
     
 
 def find_similar(img_path, location='file', content=None):
+    print(img_path)
     global kmeans
 
     # load files

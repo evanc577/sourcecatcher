@@ -41,7 +41,7 @@ class InvalidLink(SCError):
     """Raised when an invalid link is used"""
 
     def __str__(self):
-        return "Invalid link"
+        return "Could not find any data at this link"
 
 class InvalidImage(SCError):
     """Raised when an image cannot be opened"""

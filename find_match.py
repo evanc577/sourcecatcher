@@ -4,6 +4,7 @@ import PIL
 from PIL import Image
 from io import BytesIO
 from annoy import AnnoyIndex
+from sc_helpers import download_content
 import imagehash
 import argparse
 import sys
@@ -12,7 +13,6 @@ import sqlite3
 import os
 import time
 import functools
-from datetime import datetime
 
 Image.warnings.simplefilter('error', Image.DecompressionBombWarning)
 
@@ -68,7 +68,7 @@ def find(location, path, content=None):
     conn.close()
 
     # sort results
-    results = sorted(results, key=functools.cmp_to_key(results_cmp))
+    results = sorted(results, key=lambda x: (-x[0], x[1]))
 
     end_time = time.time()
 
@@ -77,35 +77,6 @@ def find(location, path, content=None):
     print(f"annoy search time (phash): {ann_end_time - ann_start_time:06f} seconds")
 
     return results
-
-def download_content(url):
-    MAX_DOWNLOAD = 15 * 1024 * 1024
-    try:
-        response = requests.get(url, stream=True, timeout=30)
-    except requests.exceptions.MissingSchema as e:
-        try:
-            # try https
-            response = requests.get("https://" + url, stream=True, timeout=30)
-        except requests.RequestException as e:
-            print(e)
-            try:
-                # try http
-                response = requests.get("http://" + url, stream=True, timeout=30)
-            except requests.RequestException as e:
-                print(e)
-                raise InvalidLink
-    except requests.exceptions.RequestException as e:
-        raise InvalidLink
-
-    size = 0
-    content = bytearray()
-    for chunk in response.iter_content(1024):
-        size += len(chunk)
-        content += chunk
-        if size > MAX_DOWNLOAD:
-            raise EntityTooLarge
-
-    return content
 
 
 def load_image(location, path, content=None):
@@ -127,66 +98,6 @@ def load_image(location, path, content=None):
 
     return img
 
-def results_cmp(a, b):
-    """sort results by score, then by earliest tweet post date"""
-    if a[0] > b[0]:
-        return 1
-    elif a[0] < b[0]:
-        return -1
-    else:
-        if a[1] > b[1]:
-            return 1
-        elif a[1] < b[1]:
-            return -1
-        else:
-            return 0
-
-def stats():
-    """returns stats for the database"""
-    conn = sqlite3.connect('live/twitter_scraper.db')
-    c = conn.cursor()
-
-    c.execute('SELECT COUNT() FROM info')
-    num_photos = c.fetchone()[0]
-
-    c.execute('SELECT COUNT() FROM tweet_text')
-    num_tweets = c.fetchone()[0]
-
-    mtime = datetime.utcfromtimestamp(os.path.getmtime('live/phash_index.ann'))
-    now = datetime.utcnow()
-    time_diff = secs_to_str((now - mtime).seconds)
-
-    conn.close()
-    return num_photos, num_tweets, time_diff
-
-def secs_to_str(secs):
-    """converts number of seconds to a human readable string"""
-    SECS_PER_MIN = 60
-    SECS_PER_HR = SECS_PER_MIN * 60
-    SECS_PER_DAY = SECS_PER_HR * 24
-
-    if secs < SECS_PER_MIN:
-        if secs == 1:
-            return '1 second'
-        else:
-            return '{} seconds'.format(secs)
-    if secs < SECS_PER_HR:
-        mins = secs // SECS_PER_MIN
-        if mins == 1:
-            return '1 minute'
-        else:
-            return '{} minutes'.format(mins)
-    if secs < SECS_PER_DAY:
-        hrs = secs // SECS_PER_HR
-        if hrs == 1:
-            return '1 hour'
-        else:
-            return '{} hours'.format(hrs)
-    days = secs // SECS_PER_DAY
-    if days == 1:
-        return '1 day'
-    else:
-        return '{} days'.format(secs // SECS_PER_DAY)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Find a close image match")

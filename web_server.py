@@ -1,26 +1,25 @@
-from flask import Flask, flash, redirect, render_template, request, session, abort
+from bs4 import BeautifulSoup
+from datetime import timedelta, datetime
+from dcapp import dc_app
+from find_match import find
+from find_similar import find_similar
+from flask import Flask, flash, redirect, request, session, abort
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from find_match import find, stats, download_content
-from find_similar import find_similar
+from image_search import image_search
 from sc_exceptions import *
-from werkzeug.utils import secure_filename
+from sc_helpers import download_content
+from sc_helpers import render_page
 from werkzeug.exceptions import HTTPException
-import requests
-import requests_cache
-import urllib
+from werkzeug.utils import secure_filename
+import hashlib
 import os
 import random
-import re
-from collections import OrderedDict
-from bs4 import BeautifulSoup
+import requests
+import requests_cache
+import sqlite3
 import tldextract
 import yaml
-import tweepy
-from html import escape
-import sqlite3
-from datetime import timedelta, datetime
-import hashlib
 
 UPLOAD_FOLDER = 'uploads'
 try:
@@ -34,7 +33,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
-
 
 # calculate sha256 hash for file
 def sha256(filename):
@@ -50,7 +48,6 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["30 per minute", "1 per second"],
 )
-
 
 # parse config.yaml
 try:
@@ -71,18 +68,6 @@ try:
 except KeyError:
     print("could not parse users file")
     sys.exit(1)
-
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_secret)
-
-api = tweepy.API(auth)
-
-tweepy_kwargs = {
-        'compression': False,
-        'tweet_mode': 'extended',
-        'trim_user': False,
-        'include_entities': True,
-        }
 
 req_expire_after = timedelta(seconds=600)
 cached_req_session = requests_cache.CachedSession('sc_cache', backend='sqlite', expire_after=req_expire_after)
@@ -173,143 +158,23 @@ def users():
     return render_page('twitter_users.html', **kwargs)
 
 
-def dc_app(path):
-    """Get HQ pictures from DC app"""
-
-    # request DC app webpage
-    try:
-        try:
-            response = cached_req_session.get(path, timeout=30)
-        except requests.exceptions.MissingSchema:
-            path = 'https://' + path
-            response = cached_req_session.get(path, timeout=30)
-    except requests.exceptions.Timeout:
-        raise DCAppError('Request timed out')
-
-    if response.status_code != 200:
-        raise DCAppError(f'Error code {response.status_code}')
-
-    app_images = None
-    app_video = None
-    app_video_poster = None
-
-    source = response.text
-    parsed_html = BeautifulSoup(source, features='html.parser')
-
-    # match image urls
-    regex = r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+)"
-
-    try:
-        # try to find video
-        app_video = parsed_html.body.find('video').find('source').attrs['src']
-        app_video_poster = parsed_html.body.find('video').attrs['poster']
-    except:
-        # find all images from app post
-        images_html = ''.join([str(h) for h in parsed_html.body.find_all('div', attrs={'class': 'img-box'})])
-        x = re.findall(regex, images_html)
-
-        # create urls for full-size images
-        files = []
-        for url in x:
-            temp = url[0]
-            temp = temp.replace('cache/', '')
-            temp = temp.replace('thumb-', '')
-            temp = temp.replace(url[2], '')
-            files.append(temp)
-
-        # remove duplicates
-        app_images = list(OrderedDict.fromkeys(files))
-
-    # find post username and text
-    app_poster = parsed_html.body.find('div', attrs={'class': 'card-name'}).text.strip()
-    app_text = parsed_html.body.find('div', attrs={'class': 'card-text'}).text.strip()
-
-    # find profile picture
-    profile_pic = parsed_html.body.find('div', attrs={'class': 'profile-img'}).find('img').attrs['src']
-    try:
-        x = re.findall(regex, profile_pic)[0]
-        temp = x[0]
-        temp = temp.replace('cache/', '')
-        temp = temp.replace('thumb-', '')
-        temp = temp.replace(x[2], '')
-        profile_pic = temp
-    except Exception as e:
-        print(f"Error getting full size profile picture {e}")
-
-    kwargs = {}
-    kwargs['app_video'] = app_video
-    kwargs['app_video_poster'] = app_video_poster
-    kwargs['app_images'] = app_images
-    kwargs['app_poster'] = app_poster
-    kwargs['app_text'] = app_text
-    kwargs['profile_pic'] = profile_pic
-    kwargs['url'] = path
-
-    return render_page('dc_app.html', **kwargs)
-
-def dc_app_image(path):
-    """Get HQ version of DC app picture"""
-    # verify link
-    x = re.match(r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+$)", path)
-    if x is None:
-        raise FullSizeDCAppImage
-    else:
-        # get full size image
-        image_link = path.replace('cache/', '')
-        image_link = image_link.replace('thumb-', '')
-        image_link = image_link.replace(x.groups()[2], '')
-
-        # request image link
-        if False:
-            try:
-                response = cached_req_session.get(image_link, timeout=30)
-            except requests.exceptions.MissingSchema:
-                image_link = 'https://' + image_link
-                response = cached_req_session.get(image_link, timeout=30)
-
-            if response.status_code == 200:
-                app_direct_image = True
-            else:
-                error_msg = 'Error: Image could not be found'
-                raise InvalidDCAppLink
-
-
-        app_images = f'<img class="app_img" src={image_link}>\n'
-
-        kwargs = {}
-        kwargs['image_link'] = image_link
-        kwargs['url'] = path
-
-        return render_page('dc_app_image.html', **kwargs)
-
-
 def find_and_render(location, path):
     """Try to find a matching image and render the results webpage"""
     app = False
     app_direct_image = False
     basename = None
-    tweet_id = None
-    tweet_ids = []
-    tweets = []
     error_msg = None
     error_reasons = None
     error_link = None
     warning_msg = None
-    content = None
 
     try:
         if location == 'url':
             extract = tldextract.extract(path)
-
             if extract.subdomain == 'dreamcatcher' and \
                     extract.domain == 'candlemystar' and \
                     extract.suffix == 'com':
                 return dc_app(path)
-            elif False and extract.subdomain == 'file' and \
-                    extract.domain == 'candlemystar' and \
-                    extract.suffix == 'com':
-                # disabled for now
-                return dc_app_image(path)
             else:
                 content = download_content(path)
                 found = find('url', path, content=content)
@@ -317,91 +182,7 @@ def find_and_render(location, path):
         elif location == 'file':
             found = find('file', path)
 
-        id_score = {}
-        count = 0
-        for candidate in found:
-            score, tweet_id, basename = candidate
-            if tweet_id in id_score:
-                continue
-
-            score_percent = calc_score_percent(score)
-
-            error = None
-            try:
-                tweet_ids.append(str(tweet_id))
-
-                id_score[tweet_id] = score_percent
-                count += 1
-            except TWError as e:
-                error = e
-
-            if count == 0 and error is not None:
-                raise error
-
-        if count == 0:
-            # try content-based search if no matches are found
-            if location == 'url':
-                found = find_similar(path, location='url', content=content)
-            elif location == 'file':
-                found = find_similar(path, location='file')
-            count = 0
-            for candidate in found:
-                score, tweet_id, basename = candidate
-                if tweet_id in id_score:
-                    continue
-
-                try:
-                    tweet_ids.append(str(tweet_id))
-
-                    id_score[tweet_id] = score
-                    count += 1
-                except TWError as e:
-                    error = e
-
-                if count == 0 and error is not None:
-                    raise error
-
-            if count == 0:
-                raise NoMatchesFound
-            else:
-                warning_msg = "No exact matches found<br /><strong>Experimental:</strong> Showing close matches"
-
-        if len(tweet_ids) != 0:
-            tweepy_kwargs = {
-                    'tweet_mode': 'extended',
-                    }
-
-            todo_ids = set()
-            for tweet_id in tweet_ids:
-                todo_ids.add(tweet_id.strip())
-
-            # create tweet cards
-            try:
-                lookedup_tweets = sorted(api.statuses_lookup(tweet_ids, **tweepy_kwargs),
-                        key=lambda x: (-id_score[x._json['id']], x._json['id']))
-                for lookedup_tweet in lookedup_tweets:
-                    lookedup_tweet = lookedup_tweet._json
-                    score = id_score[lookedup_tweet['id']]
-                    tweets.append(get_custom_embed(lookedup_tweet, score))
-                    try:
-                        todo_ids.remove(str(lookedup_tweet['id']))
-                    except KeyError:
-                        pass
-            except tweepy.RateLimitError as e:
-                for tweet_id in tweet_ids:
-                    tweets.append(get_embed(tweet_id))
-                    try:
-                        todo_ids.remove(str(lookedup_tweet['id']))
-                    except KeyError:
-                        pass
-
-            # add tweets that have been removed
-            for tweet_id in todo_ids:
-                tweets.append(get_saved_tweet(tweet_id, id_score[int(tweet_id)]))
-
-        # show error if no tweets are found
-        if len(tweets) == 0:
-            raise NoMatchesFound
+        return image_search(location, path, found)
 
     except TWError as e:
         error_msg = str(e)
@@ -421,9 +202,7 @@ def find_and_render(location, path):
         error_msg = "An unknown error occurred"
         print(e)
 
-
     kwargs = {
-            'tweets': tweets,
             'error_msg': error_msg,
             'error_reasons': error_reasons,
             'error_link': error_link,
@@ -433,96 +212,5 @@ def find_and_render(location, path):
     if location == 'url':
         kwargs['url'] = path
 
-
-    # found some matches
-    if len(tweets) != 0:
-        return render_page('match_results.html', **kwargs)
-
     # did not find any matches
     return render_page('error.html', **kwargs)
-
-def get_saved_tweet(tweet_id, score):
-    """
-    Create tweet embed from saved data
-    """
-    conn = sqlite3.connect('live/twitter_scraper.db')
-    c = conn.cursor()
-
-    tweet = {}
-    tweet['custom'] = True
-    tweet['is_backup'] = True
-    tweet['score'] = score
-    tweet['tweet_id'] = tweet_id
-
-    c.execute('SELECT * FROM tweet_text where id=(?)', (tweet_id,))
-    _, text = c.fetchone()
-    tweet['text_html'] = re.sub(r"https://t\.co/\w+$", "", text)
-
-    images = []
-    c.execute('SELECT * FROM info where id=(?)', (tweet_id,))
-    info = c.fetchone()
-    tweet['screen_name'] = info[2]
-
-    return tweet
-
-
-def get_custom_embed(lookedup_tweet, score):
-    """
-    Create a custom embedded tweet
-    """
-
-    tweet = {}
-    tweet['custom'] = True
-    tweet['tweet_id'] = lookedup_tweet['id']
-    tweet['score'] = score
-
-    # process tweet text
-    display_range = lookedup_tweet['display_text_range']
-    tweet['text_html'] = lookedup_tweet['full_text'][display_range[0]:display_range[1]]
-
-    # process name
-    tweet['screen_name'] = lookedup_tweet['user']['screen_name']
-    tweet['identity_name'] = lookedup_tweet['user']['name']
-    tweet['profile_image'] = lookedup_tweet['user']['profile_image_url_https']
-
-    # process time
-    tweet['ts'] = lookedup_tweet['created_at']
-
-    # process tweet images
-    media = lookedup_tweet['extended_entities']['media']
-    tweet['num_media'] = len(media)
-    images = []
-    for m in media:
-        images.append(m['media_url_https'])
-    tweet['images'] = images
-
-    return tweet
-
-def get_embed(tweet_id):
-    """get html for an embedded tweet"""
-    tweet = {}
-    tweet['custom'] = False
-    tweet_source = 'https://www.twitter.com/a/status/{}'.format(tweet_id)
-    url = urllib.parse.quote(tweet_source, safe='')
-    get_url = 'https://publish.twitter.com/oembed?url={}'.format(url)
-
-    r = cached_req_session.get(url=get_url, timeout=30)
-    tweet['embed_tweet'] = r.json()['html']
-    return tweet
-
-def calc_score_percent(score):
-    """calculate the percentage score, where 100 is best and 0 is worst"""
-    if score > 32:
-        return 0
-
-    return int(100 - 100 * score / 32)
-
-def render_page(template, **kwargs):
-    """Get stats and render template"""
-    num_photos, num_tweets, mtime = stats()
-    kwargs['num_photos'] = num_photos
-    kwargs['num_tweets'] = num_tweets
-    kwargs['mtime'] = mtime
-    return render_template(template, **kwargs)
-
-
