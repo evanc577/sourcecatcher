@@ -366,6 +366,43 @@ def find_and_render(location, path):
             else:
                 warning_msg = "No exact matches found<br /><strong>Experimental:</strong> Showing close matches"
 
+        if len(tweet_ids) != 0:
+            tweepy_kwargs = {
+                    'tweet_mode': 'extended',
+                    }
+
+            todo_ids = set()
+            for tweet_id in tweet_ids:
+                todo_ids.add(tweet_id.strip())
+
+            # create tweet cards
+            try:
+                lookedup_tweets = sorted(api.statuses_lookup(tweet_ids, **tweepy_kwargs),
+                        key=lambda x: (-id_score[x._json['id']], x._json['id']))
+                for lookedup_tweet in lookedup_tweets:
+                    lookedup_tweet = lookedup_tweet._json
+                    score = id_score[lookedup_tweet['id']]
+                    tweets.append(get_custom_embed(lookedup_tweet, score))
+                    try:
+                        todo_ids.remove(str(lookedup_tweet['id']))
+                    except KeyError:
+                        pass
+            except tweepy.RateLimitError as e:
+                for tweet_id in tweet_ids:
+                    tweets.append(get_embed(tweet_id))
+                    try:
+                        todo_ids.remove(str(lookedup_tweet['id']))
+                    except KeyError:
+                        pass
+
+            # add tweets that have been removed
+            for tweet_id in todo_ids:
+                tweets.append(get_saved_tweet(tweet_id, id_score[int(tweet_id)]))
+
+        # show error if no tweets are found
+        if len(tweets) == 0:
+            raise NoMatchesFound
+
     except TWError as e:
         error_msg = str(e)
         error_link = e.link
@@ -384,44 +421,6 @@ def find_and_render(location, path):
         error_msg = "An unknown error occurred"
         print(e)
 
-    if len(tweet_ids) != 0:
-        tweepy_kwargs = {
-                'tweet_mode': 'extended',
-                }
-
-        todo_ids = set()
-        for tweet_id in tweet_ids:
-            todo_ids.add(tweet_id.strip())
-
-        # create tweet cards
-        try:
-            lookedup_tweets = sorted(api.statuses_lookup(tweet_ids, **tweepy_kwargs),
-                    key=lambda x: (-id_score[x._json['id']], x._json['id']))
-            for lookedup_tweet in lookedup_tweets:
-                lookedup_tweet = lookedup_tweet._json
-                score = id_score[lookedup_tweet['id']]
-                tweets.append(get_custom_embed(lookedup_tweet, score))
-                try:
-                    todo_ids.remove(str(lookedup_tweet['id']))
-                except KeyError:
-                    pass
-        except tweepy.RateLimitError as e:
-            for tweet_id in tweet_ids:
-                tweets.append(get_embed(tweet_id))
-                try:
-                    todo_ids.remove(str(lookedup_tweet['id']))
-                except KeyError:
-                    pass
-
-        # add tweets that have been removed
-        for tweet_id in todo_ids:
-            tweets.append(get_saved_tweet(tweet_id, id_score[int(tweet_id)]))
-
-    # show error if no tweets are found
-    if len(tweets) == 0:
-        e = NoMatchesFound()
-        error_msg = str(e)
-        error_reasons = e.reasons()
 
     kwargs = {
             'tweets': tweets,
