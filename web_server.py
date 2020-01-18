@@ -163,6 +163,7 @@ def find_and_render(location, path):
     app = False
     app_direct_image = False
     basename = None
+    content = None
     error_msg = None
     error_reasons = None
     error_link = None
@@ -182,7 +183,7 @@ def find_and_render(location, path):
         elif location == 'file':
             found = find('file', path)
 
-        return image_search(location, path, found)
+        return image_search(location, path, found, content=content)
 
     except TWError as e:
         error_msg = str(e)

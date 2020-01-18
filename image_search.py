@@ -47,7 +47,7 @@ req_expire_after = timedelta(seconds=600)
 cached_req_session = requests_cache.CachedSession('sc_cache', backend='sqlite', expire_after=req_expire_after)
 
 
-def image_search(location, path, found):
+def image_search(location, path, found, content=None):
     tweet_ids = []
     tweets = []
     warning_msg = None
