@@ -10,7 +10,13 @@ See the [Reddit release thread](https://www.reddit.com/r/dreamcatcher/comments/c
 Sourcecatcher has been tested on Arch Linux and Ubuntu 19.04.
 It should also work on many other Linux distros.
 
-### Install python requirements
+### Install requirements
+
+#### Required system packages
+
+* ffmpeg
+
+#### Python modules
 
 Sourcecatcher has been tested on python 3.7, but should work on other recent versions of python 3 also
 
@@ -68,7 +74,7 @@ After=network.target
 User=YOUR_USER
 Group=www-data
 WorkingDirectory=/PATH/TO/sourcecatcher
-Environment="PATH=/PATH/TO/sourcecatcher/sourcecatcher_venv/bin"
+Environment="PATH=/PATH/TO/sourcecatcher/sourcecatcher_venv/bin:/usr/bin"
 ExecStart=/PATH/TO/sourcecatcher/sourcecatcher_venv/bin/gunicorn -c gunicorn.config.py -w 9 -b unix:sourcecatcher.sock -m 007 wsgi:app
 
 [Install]

@@ -16,3 +16,4 @@ opencv-contrib-python
 joblib
 requests-cache
 redis
+youtube_dl
