@@ -3,17 +3,24 @@ from collections import OrderedDict
 from datetime import timedelta, datetime
 from sc_exceptions import *
 from sc_helpers import render_page
+import multiprocessing
+import os
 import re
 import requests
 import requests_cache
+import youtube_dl
+
+# process synchronization for video download
+lck = multiprocessing.Lock()
+cv = multiprocessing.Condition(lck)
+manager = multiprocessing.Manager()
+working = manager.dict()
 
 req_expire_after = timedelta(seconds=600)
 cached_req_session = requests_cache.CachedSession('sc_cache', backend='sqlite', expire_after=req_expire_after)
 
 
-def dc_app(path):
-    """Get HQ pictures from DC app"""
-
+def get_parsed_html(path):
     # request DC app webpage
     try:
         try:
@@ -27,19 +34,38 @@ def dc_app(path):
     if response.status_code != 200:
         raise DCAppError(f'Error code {response.status_code}')
 
+    source = response.text
+    return BeautifulSoup(source, features='html.parser')
+
+
+def find_video(parsed_html):
+    # try to find video
+    return parsed_html.body.find('video').find('source').attrs['src']
+
+
+def extract_id(url):
+    # extract id
+    x = re.search(r"dreamcatcher\.candlemystar\.com\/post\/(\d+)", url)
+    if x:
+        return x.group(1)
+    return None
+
+
+def dc_app(path):
+    """Get HQ pictures from DC app"""
+    parsed_html = get_parsed_html(path)
+
     app_images = None
     app_video = None
     app_video_poster = None
-
-    source = response.text
-    parsed_html = BeautifulSoup(source, features='html.parser')
+    dcapp_id = extract_id(path)
 
     # match image urls
     regex = r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+)"
 
     try:
         # try to find video
-        app_video = parsed_html.body.find('video').find('source').attrs['src']
+        app_video = find_video(parsed_html)
         app_video_poster = parsed_html.body.find('video').attrs['poster']
     except:
         # find all images from app post
@@ -75,6 +101,7 @@ def dc_app(path):
         print(f"Error getting full size profile picture {e}")
 
     kwargs = {}
+    kwargs['dcapp_id'] = dcapp_id
     kwargs['app_video'] = app_video
     kwargs['app_video_poster'] = app_video_poster
     kwargs['app_images'] = app_images
@@ -121,3 +148,44 @@ def dc_app_image(path):
         return render_page('dc_app_image.html', **kwargs)
 
 
+def get_video_link(url):
+    # extract id
+    dcapp_id = extract_id(url)
+    if dcapp_id is None:
+        raise VideoDownloadError
+
+    # find m3u8 url
+    try:
+        video_url = find_video(get_parsed_html(url))
+    except Exception as e:
+        print(e)
+        raise VideoDownloadError
+
+    filename = f"{dcapp_id}.mp4"
+    path = f'dcapp_videos/{filename}'
+    temppath = f'{path}.temp'
+
+    with cv:
+        while dcapp_id in working:
+            if not cv.wait(timeout=30):
+                raise VideoDownloadError
+        working[dcapp_id] = 1
+
+    if not os.path.exists(path):
+        opts = {
+           'outtmpl': temppath,
+           'noplaylist' : True,
+        }
+        try:
+            with youtube_dl.YoutubeDL(opts) as ydl:
+                result = ydl.download([video_url])
+        except youtube_dl.utils.DownloadError as e:
+            raise VideoDownloadError 
+
+        os.rename(temppath, path)
+
+    with cv:
+        del working[dcapp_id]
+        cv.notify_all()
+
+    return filename

@@ -10,7 +10,7 @@
   </div>
   <p>{{ app_text|e }}</p>
   {% if app_video %}
-    <a class="video_download" href="/api/get_dcapp_video?id={{ dcapp_id|e }}" download="dcapp_{{ dcapp_id|e }}.mp4">Download video</a>
+    <a class="video_download" href="/api/get_dcapp_video?url={{ urlescape(url) }}" download="dcapp_{{ dcapp_id|e }}.mp4">Download video</a>
   {% endif %}
 </div>
 <div class="results">

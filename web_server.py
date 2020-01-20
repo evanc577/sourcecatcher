@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 from datetime import timedelta, datetime
-from dcapp import dc_app
+from dcapp import dc_app, get_video_link
 from find_match import find
 from find_similar import find_similar
 from flask import Flask, flash, redirect, render_template, request, session, abort, jsonify, send_from_directory
@@ -10,8 +10,6 @@ from image_search import image_search
 from sc_exceptions import *
 from sc_helpers import download_content
 from sc_helpers import render_page
-from download_dcapp_video import get_video_link
-from werkzeug.utils import secure_filename
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import secure_filename
 import hashlib
@@ -21,6 +19,7 @@ import requests
 import requests_cache
 import sqlite3
 import tldextract
+import urllib
 import yaml
 
 UPLOAD_FOLDER = 'uploads'
@@ -38,6 +37,9 @@ app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
 
+def urlescape(url):
+    return urllib.parse.quote(url, safe='')
+
 # calculate sha256 hash for file
 def sha256(filename):
     filename = os.getcwd() + filename
@@ -46,6 +48,7 @@ def sha256(filename):
         return hashlib.sha256(bytes).hexdigest();
 
 app.jinja_env.globals.update(sha256=sha256)
+app.jinja_env.globals.update(urlescape=urlescape)
 
 limiter = Limiter(
     app,
@@ -110,11 +113,11 @@ def entity_too_large(e):
 
 @app.route('/api/get_dcapp_video')
 def api_get_dcapp_video():
-    dcapp_id = request.args.get('id')
-    if dcapp_id is None:
-        return (jsonify({'reason': 'no id specified'}), 400)
+    url = request.args.get('url')
+    if url is None:
+        return (jsonify({'reason': 'no url specified'}), 400)
     try:
-        filename = get_video_link(dcapp_id)
+        filename = get_video_link(url)
         return send_from_directory(app.config['VIDEOS_FOLDER'], filename)
     except VideoDownloadError:
         return (jsonify({'reason': 'could not download video'}), 404)
@@ -172,123 +175,6 @@ def users():
             }
 
     return render_page('twitter_users.html', **kwargs)
-
-
-<<<<<<< Updated upstream
-=======
-def dc_app(path):
-    """Get HQ pictures from DC app"""
-
-    # get id
-    x = re.search(r'dreamcatcher\.candlemystar\.com\/post\/(\d+)', path)
-    dcapp_id = x.group(1)
-
-    # request DC app webpage
-    try:
-        try:
-            response = cached_req_session.get(path, timeout=30)
-        except requests.exceptions.MissingSchema:
-            path = 'https://' + path
-            response = cached_req_session.get(path, timeout=30)
-    except requests.exceptions.Timeout:
-        raise DCAppError('Request timed out')
-
-    if response.status_code != 200:
-        raise DCAppError(f'Error code {response.status_code}')
-
-    app_images = None
-    app_video = None
-    app_video_poster = None
-
-    source = response.text
-    parsed_html = BeautifulSoup(source, features='html.parser')
-
-    # match image urls
-    regex = r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+)"
-
-    try:
-        # try to find video
-        app_video = parsed_html.body.find('video').find('source').attrs['src']
-        app_video_poster = parsed_html.body.find('video').attrs['poster']
-    except:
-        # find all images from app post
-        images_html = ''.join([str(h) for h in parsed_html.body.find_all('div', attrs={'class': 'img-box'})])
-        x = re.findall(regex, images_html)
-
-        # create urls for full-size images
-        files = []
-        for url in x:
-            temp = url[0]
-            temp = temp.replace('cache/', '')
-            temp = temp.replace('thumb-', '')
-            temp = temp.replace(url[2], '')
-            files.append(temp)
-
-        # remove duplicates
-        app_images = list(OrderedDict.fromkeys(files))
-
-    # find post username and text
-    app_poster = parsed_html.body.find('div', attrs={'class': 'card-name'}).text.strip()
-    app_text = parsed_html.body.find('div', attrs={'class': 'card-text'}).text.strip()
-
-    # find profile picture
-    profile_pic = parsed_html.body.find('div', attrs={'class': 'profile-img'}).find('img').attrs['src']
-    try:
-        x = re.findall(regex, profile_pic)[0]
-        temp = x[0]
-        temp = temp.replace('cache/', '')
-        temp = temp.replace('thumb-', '')
-        temp = temp.replace(x[2], '')
-        profile_pic = temp
-    except Exception as e:
-        print(f"Error getting full size profile picture {e}")
-
-    kwargs = {}
-    kwargs['app_video'] = app_video
-    kwargs['app_video_poster'] = app_video_poster
-    kwargs['app_images'] = app_images
-    kwargs['app_poster'] = app_poster
-    kwargs['app_text'] = app_text
-    kwargs['profile_pic'] = profile_pic
-    kwargs['url'] = path
-    kwargs['dcapp_id'] = dcapp_id
-
-    return render_page('dc_app.html', **kwargs)
-
-def dc_app_image(path):
-    """Get HQ version of DC app picture"""
-    # verify link
-    x = re.match(r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+$)", path)
-    if x is None:
-        raise FullSizeDCAppImage
-    else:
-        # get full size image
-        image_link = path.replace('cache/', '')
-        image_link = image_link.replace('thumb-', '')
-        image_link = image_link.replace(x.groups()[2], '')
-
-        # request image link
-        if False:
-            try:
-                response = cached_req_session.get(image_link, timeout=30)
-            except requests.exceptions.MissingSchema:
-                image_link = 'https://' + image_link
-                response = cached_req_session.get(image_link, timeout=30)
-
-            if response.status_code == 200:
-                app_direct_image = True
-            else:
-                error_msg = 'Error: Image could not be found'
-                raise InvalidDCAppLink
-
-
-        app_images = f'<img class="app_img" src={image_link}>\n'
-
-        kwargs = {}
-        kwargs['image_link'] = image_link
-        kwargs['url'] = path
-
-        return render_page('dc_app_image.html', **kwargs)
 
 
 def find_and_render(location, path):
