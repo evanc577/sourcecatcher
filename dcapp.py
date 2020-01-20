@@ -9,12 +9,14 @@ import re
 import requests
 import requests_cache
 import youtube_dl
+import redis
 
 # process synchronization for video download
 lck = multiprocessing.Lock()
 cv = multiprocessing.Condition(lck)
-manager = multiprocessing.Manager()
-working = manager.dict()
+WORKING = 'sc_working_videos'
+r = redis.Redis(host='localhost', port=6379, db=0)
+r.delete(WORKING)
 
 req_expire_after = timedelta(seconds=600)
 cached_req_session = requests_cache.CachedSession('sc_cache', backend='sqlite', expire_after=req_expire_after)
@@ -166,10 +168,10 @@ def get_video_link(url):
     temppath = f'{path}.temp'
 
     with cv:
-        while dcapp_id in working:
+        while r.sismember(WORKING, dcapp_id):
             if not cv.wait(timeout=30):
                 raise VideoDownloadError
-        working[dcapp_id] = 1
+        r.sadd(WORKING, dcapp_id)
 
     if not os.path.exists(path):
         opts = {
@@ -185,7 +187,7 @@ def get_video_link(url):
         os.rename(temppath, path)
 
     with cv:
-        del working[dcapp_id]
+        r.srem(WORKING, dcapp_id)
         cv.notify_all()
 
     return filename
