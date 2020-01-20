@@ -67,3 +67,8 @@ class TWError(SCError):
 
     def __str__(self):
         return f"A matching image was found but the tweet no longer exists ({self.message})"
+
+class VideoDownloadError(SCError):
+
+    def __str__():
+        return "Could not download file"

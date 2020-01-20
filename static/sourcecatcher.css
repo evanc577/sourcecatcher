@@ -143,6 +143,7 @@ form {
   margin: 10px auto;
 }
 
+.video_download,
 [type="file"] + label {
   border: 1px solid lightgray;
   border-radius: 5px;
@@ -157,12 +158,16 @@ form {
   vertical-align: middle;
 }
 
+.video_download:focus,
+.video_download:hover,
 [type="file"]:focus + label,
 [type="file"] + label:hover {
   background-color: #F2C763;
   color: #fff;
+  text-decoration: none;
 }
 
+.video_download:focus,
 [type="file"]:focus + label {
   outline: 1px dotted #000;
   outline: -webkit-focus-ring-color auto 5px;
@@ -265,6 +270,17 @@ input[type=text] {
   font-weight: bold;
   font-size: 1.25em;
   margin: auto 0 auto 0.5em;
+}
+
+.video_download {
+  text-align: center;
+  margin: 10px auto;
+  display: block;
+  width: max-content;
+}
+
+.video_download {
+  color: #000;
 }
 
 #video {

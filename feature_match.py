@@ -19,7 +19,7 @@ def extract_features(f, des_length=2048):
     try:
         idx = f[0]
         path = f[1]
-        print(f'idx={idx:08d} path={path}')
+        print(f'features: idx={idx:08d} path={path}')
 
         img = cv2.imread(path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -41,7 +41,7 @@ def compute_histograms(f):
         idx = f[0]
         path = f[1][0]
         des = f[1][1]
-        print(f'idx={idx:08d} path={path}')
+        print(f'histograms: idx={idx:08d} path={path}')
         indices = kmeans.predict(des)
         hist = np.zeros(kmeans.cluster_centers_.shape[0], dtype=np.float32)
         for i in indices:
@@ -152,7 +152,7 @@ def gen_cbir():
     for i,f in enum_files:
         BOW_annoy_map[i] = f[0]
 
-    index = AnnoyIndex(n_clusters, 'angular')
+    index = AnnoyIndex(n_clusters, 'manhattan')
 
     # add histograms to annoy index
     files = enumerate(files)
