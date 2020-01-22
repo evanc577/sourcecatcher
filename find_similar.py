@@ -48,7 +48,7 @@ def find_similar(img_path, location='file', content=None):
     annoy_map = joblib.load('live/BOW_annoy_map.pkl')
     kmeans = joblib.load('live/kmeans.pkl')
 
-    index = AnnoyIndex(kmeans.cluster_centers_.shape[0], 'angular')
+    index = AnnoyIndex(kmeans.n_clusters, 'angular')
     index.load('live/BOW_index.ann')
 
     conn = sqlite3.connect('live/twitter_scraper.db')

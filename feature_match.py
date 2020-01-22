@@ -152,7 +152,7 @@ def gen_cbir():
     for i,f in enum_files:
         BOW_annoy_map[i] = f[0]
 
-    index = AnnoyIndex(n_clusters, 'manhattan')
+    index = AnnoyIndex(n_clusters, 'angular')
 
     # add histograms to annoy index
     files = enumerate(files)
