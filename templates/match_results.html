@@ -22,7 +22,7 @@
       {% if tweet.is_backup %}
       <img class="avatar" src="{{ url_for('static', filename='user_profile.png') }}">
       {% else %}
-      <img class="avatar" src="{{ tweet.profile_image|e }}">
+      <img class="avatar" src="{{ tweet.profile_image|e }}" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_profile.png') }}';">
       {% endif %}
       <div class="name_container">
         <span class="identity_name">
@@ -55,7 +55,7 @@
     <div class="tweet_images">
       {% for image in tweet.images %}
       <div class="image_container num_media{{ tweet.num_media }}">
-        <img alt="Twitter image" src="{{ image|e }}">
+        <img alt="Twitter image" src="{{ image|e }}" onerror="this.onerror=null;this.src='{{ url_for('static', filename='placeholder.png') }}';">
       </div>
       {% endfor %}
     </div>
