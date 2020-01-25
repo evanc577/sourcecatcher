@@ -1,0 +1,110 @@
+<script>
+  // File drag and drop support
+  let enterTarget = null;
+  let dropPopup = document.getElementById('dnd-modal');
+  let form = document.getElementById('file_upload_form');
+  let input = document.getElementById('file_input');
+
+  function containsFiles(event) {
+    if (event.dataTransfer.types) {
+      for (var i = 0; i < event.dataTransfer.types.length; i++) {
+        if (event.dataTransfer.types[i] == "Files") {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+  document.ondragenter = function(event) {
+    if (containsFiles(event)) {
+      event.stopPropagation();
+      event.preventDefault();
+      enterTarget = event.target;
+      dropPopup.style.display = 'block';
+    }
+  };
+  document.ondragleave = function(event) {
+    if (containsFiles(event)) {
+      event.stopPropagation();
+      event.preventDefault();
+      //Only if the two target are equal it means the drag has left the window
+      if (enterTarget == event.target){
+        dropPopup.style.display = 'none';
+      }
+    }
+  };
+  document.ondragover = function(event) {
+    if (containsFiles(event)) {
+      event.preventDefault();
+    }
+  };
+  document.ondrop = function(event) {
+    if (containsFiles(event)) {
+      event.stopPropagation();
+      event.preventDefault();
+      dropPopup.style.display = 'none';
+      if (event.dataTransfer.files && event.dataTransfer.files.length) {
+        input.files = event.dataTransfer.files;
+        form.submit();
+      }
+    }
+  };
+
+  // hack to select all text on first click
+  var link_input = document.getElementById("link_input")
+  var focusedElement;
+  link_input.onfocus = function() {
+    if (focusedElement == this) return;
+    focusedElement = this;
+    setTimeout(function() { focusedElement.select(); }, 0);
+  };
+  link_input.onblur = function() {
+    focusedElement = null;
+  };
+
+  // change search button color automatically
+  var search_button = document.getElementById("link_submit_btn")
+  function text_input_change() {
+    if (link_input.value.length == 0) {
+      search_button.classList.remove('highlight_search');
+    } else {
+      search_button.classList.add('highlight_search');
+    }
+  }
+  ['input','keyup', 'keydown', 'paste', 'change'].forEach(e =>
+    link_input.addEventListener(e, text_input_change, false)
+  );
+  text_input_change();
+
+  // theme toggle
+  window.addEventListener(
+    'load',
+    function load()
+    {
+      window.removeEventListener('load', load, false);
+      document.body.classList.remove('preload');
+    },
+    false);
+  const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
+  const currentTheme = localStorage.getItem('theme') ? localStorage.getItem('theme') : null;
+  function switchTheme(e) {
+    if (e.target.checked) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      localStorage.setItem('theme', 'light');
+    }
+  }
+  toggleSwitch.addEventListener('change', switchTheme, false);
+  if (currentTheme) {
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    if (currentTheme === 'dark') {
+      toggleSwitch.checked = true;
+    } else {
+      toggleSwitch.checked = false;
+    }
+  } else {
+      toggleSwitch.checked = false;
+  }
+</script>
