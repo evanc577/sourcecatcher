@@ -1,6 +1,6 @@
 a.tweet_embed {
   text-decoration: none;
-  position: static;
+  position: relative;
   display: block;
   width: 500px;
   max-width: 100%;
@@ -8,12 +8,12 @@ a.tweet_embed {
   margin: 5px;
 
   border-radius: 5px;
-  box-shadow: 0px 0px 5px lightgray;
-  color: black;
+  box-shadow: 0px 0px 5px var(--box-shadow-color);
+  color: var(--fg-color);
 }
 
 a.tweet_embed:hover {
-  background-color: #f8f8f8;
+  background-color: var(--tweet-hover-bg-color);
 }
 
 a.tweet_embed:visited {
@@ -22,10 +22,11 @@ a.tweet_embed:visited {
 
 a.tweet_embed img.twitter_logo {
   display: inline-block;
-  vertical-align: top;
-  float: right;
-  margin-top: 20px;
-  margin-right: 20px;
+  position: absolute;
+  margin-top: 10px;
+  margin-right: 10px;
+  top: 0;
+  right: 0;
   width: 36px;
   height: 36px;
 }
@@ -52,20 +53,20 @@ a.tweet_embed div.author div.name_container {
 }
 
 a.tweet_embed div.author div.name_container span.identity_name {
-  color: black;
+  color: var(--fg-color);
   font-weight: 700;
   font-size: 1.1em;
 }
 
 a.tweet_embed div.author div.name_container span.screen_name {
-  color: #697882;
+  color: var(--fg2-color);
   font-size: 0.9em;
 }
 
 a.tweet_embed div.tweet_text {
   float: none;
   font-size: 1em;
-  color: #1c2022;
+  color: var(--fg-color);
   margin: 20px;
 }
 
@@ -109,13 +110,13 @@ a.tweet_embed div.datetime {
   margin-left: 20px;
   margin-right: 20px;
   margin-top: 10px;
-  color: #697882;
+  color: var(--fg2-color);
 }
 
 a.tweet_embed div.match_score {
   margin: 20px 20px 0px 20px;
   font-size: 1em;
-  color: #697882;
+  color: var(--fg2-color);
 }
 
 .backup_tweet {
