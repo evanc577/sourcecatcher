@@ -85,7 +85,8 @@
       document.body.classList.remove('preload');
     },
     false);
-  const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
+  const switch_toggle = document.querySelector('#theme-switch-toggle');
+  const hamburger = document.querySelector('#menuToggle');
   const currentTheme = localStorage.getItem('theme') ? localStorage.getItem('theme') : null;
   function switchTheme(e) {
     if (e.target.checked) {
@@ -96,15 +97,39 @@
       localStorage.setItem('theme', 'light');
     }
   }
-  toggleSwitch.addEventListener('change', switchTheme, false);
+  function toggleSwitch(e) {
+    if (e.keyCode === 13) {
+      if (e.target.checked === false) {
+        e.target.checked = true;
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        e.target.checked = false;
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+      }
+    }
+  }
+  function toggleMenu(e) {
+    if (e.keyCode === 13) {
+      if (e.target.checked === false) {
+        e.target.checked = true;
+      } else {
+        e.target.checked = false;
+      }
+    }
+  }
+  switch_toggle.addEventListener('change', switchTheme, false);
+  switch_toggle.addEventListener('keyup', toggleSwitch, false);
+  hamburger.addEventListener('keyup', toggleMenu, false);
   if (currentTheme) {
     document.documentElement.setAttribute('data-theme', currentTheme);
     if (currentTheme === 'dark') {
-      toggleSwitch.checked = true;
+      switch_toggle.checked = true;
     } else {
-      toggleSwitch.checked = false;
+      switch_toggle.checked = false;
     }
   } else {
-      toggleSwitch.checked = false;
+      switch_toggle.checked = false;
   }
 </script>

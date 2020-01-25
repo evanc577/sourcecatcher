@@ -82,6 +82,7 @@ header {
   height: inherit;
   color: #fff;
   display: inline-block;
+  outline: none;
 }
 .menu ul a:focus,
 .menu ul a:hover {
@@ -98,6 +99,15 @@ header {
 }
 #menuToggle {
   display: none;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  padding: 0;
+  position: absolute !important;
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
 }
 .menu-icon {
   display: none;
@@ -150,8 +160,19 @@ header {
   .menu-icon * {
     display: block;
   }
+  #menuToggle {
+    display: block;
+  }
+  #menuToggle:not(:checked) ~ ul {
+    display: none;
+  }
   #menuToggle:checked ~ ul {
+    display: block;
     max-height: 350px;
+  }
+  #menuToggle:focus + label {
+    outline: 1px dotted lightgray;
+    outline: 1px auto -webkit-focus-ring-color;
   }
 }
 
@@ -177,8 +198,16 @@ header {
   margin: 8px 10px;
 }
 
-.theme-switch input {
-  display: none;
+input#theme-switch-toggle {
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  padding: 0;
+  position: absolute !important;
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
 }
 
 .slider {
@@ -207,11 +236,12 @@ header {
   background-color: #F2C763;
 }
 
-input:focus + .slider {
-  box-shadow: 0 0 1px #2196F3;
+#theme-switch-toggle:focus + label {
+  outline: 1px dotted lightgray;
+  outline: 1px auto -webkit-focus-ring-color;
 }
 
-input:checked + .slider .slider-icon {
+#theme-switch-toggle:checked + label .slider .slider-icon {
   -webkit-transform: translateX(26px);
   -ms-transform: translateX(26px);
   transform: translateX(26px);
@@ -297,14 +327,6 @@ body {
 
 .footer_text {
   margin: 5px 15px;
-}
-
-h1 {
-  padding: 0 10px;
-  margin: auto;
-  font-size: 2em;
-  color: var(--dc-yellow);
-  outline: white;
 }
 
 h2 {
@@ -393,12 +415,6 @@ form {
   text-decoration: none;
 }
 
-.video_download:focus,
-[type="file"]:focus + label {
-  outline: 1px dotted var(--fg-color);
-  outline: -webkit-focus-ring-color auto 5px;
-}
-
 #link_input {
   width: 100%;
   padding: 10px;
@@ -430,9 +446,11 @@ form {
 #link_submit_btn:focus,
 #link_submit_btn:hover {
   background-color: var(--dc-yellow);
+  outline: none;
 }
 
 .highlight_search svg *,
+#link_submit_btn:focus svg *,
 #link_submit_btn:hover svg * {
   stroke: var(--bg-color);
 }
