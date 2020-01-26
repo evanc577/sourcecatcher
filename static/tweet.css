@@ -10,6 +10,7 @@ a.tweet_embed {
   border-radius: 5px;
   box-shadow: 0px 0px 5px var(--box-shadow-color);
   color: var(--fg-color);
+  background-color: var(--tweet-bg-color);
 }
 
 a.tweet_embed:hover {

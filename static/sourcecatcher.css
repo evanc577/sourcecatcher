@@ -20,6 +20,7 @@
   --nav-hover-color: var(--dc-yellow);
   --moon-color: #F5F3CE;
   --sun-color: #FDB813;
+  --tweet-bg-color: var(--bg-color);
 }
 
 [data-theme="dark"] {
@@ -31,9 +32,10 @@
   --link_input-bg-color: #474842;
   --search-border-color: #222222;
   --btn-border-color: darkgray;
-  --fg2-color: #8998a2;
+  --fg2-color: #92a0aa;
   --box-shadow-color: rgba(0,0,0,0.4);
-  --tweet-hover-bg-color: #2f302a;
+  --tweet-hover-bg-color: #373832;
+  --tweet-bg-color: #2f302a;
 }
 
 header {
