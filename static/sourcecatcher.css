@@ -200,6 +200,7 @@ header {
   width: 60px;
   height: 34px;
   margin: 8px 10px;
+  transform: scale(0.75);
 }
 
 input#theme-switch-toggle {
