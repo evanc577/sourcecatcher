@@ -2,10 +2,11 @@
 
 idx=0
 
-for dir in $(find backups/* -type d | sort -r); do
+for backup in $(find backups/ -mindepth 1 -maxdepth 1 | sort -r); do
   if [ $idx -lt 10 ]; then
     ((++idx))
   else
-    rm -rf $dir
+    echo "Removing backup $backup"
+    rm -rf $backup
   fi
 done

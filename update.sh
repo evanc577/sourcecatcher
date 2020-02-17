@@ -2,19 +2,21 @@
 
 set -e
 
-BACKUP_DIR=backups/$(date +%s)
+LOCK=/tmp/sourcecatcher.lock
+function cleanup {
+  rm -rf $LOCK
+}
+trap cleanup EXIT
+echo "acquiring lock"
+while ! mkdir $LOCK 2> /dev/null; do
+  sleep 1
+done
+echo "acquired lock"
+
 LIVE_DIR=live/
 WORKING_DIR=working
-mkdir -p $BACKUP_DIR
 mkdir -p $LIVE_DIR
 mkdir -p $WORKING_DIR
-
-cp $LIVE_DIR/twitter_scraper.db $BACKUP_DIR
-cp $LIVE_DIR/phash_index.ann $BACKUP_DIR
-cp $LIVE_DIR/descriptors.pkl $BACKUP_DIR
-cp $LIVE_DIR/BOW_annoy_map.pkl $BACKUP_DIR
-cp $LIVE_DIR/kmeans.pkl $BACKUP_DIR
-cp $LIVE_DIR/BOW_index.ann $BACKUP_DIR
 
 rm -rf $WORKING_DIR/*
 
@@ -36,5 +38,3 @@ cp $WORKING_DIR/descriptors.pkl $LIVE_DIR
 cp $WORKING_DIR/BOW_annoy_map.pkl $LIVE_DIR
 cp $WORKING_DIR/kmeans.pkl $LIVE_DIR
 cp $WORKING_DIR/BOW_index.ann $LIVE_DIR
-
-./prune_backups.sh
