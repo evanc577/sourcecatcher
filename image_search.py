@@ -9,6 +9,7 @@ import re
 import requests
 import requests_cache
 import sqlite3
+import sys
 import tweepy
 import urllib
 import yaml
@@ -126,6 +127,7 @@ def image_search(location, path, found, content=None):
     kwargs = {
             'tweets': tweets,
             'warning_msg': warning_msg,
+            'page_title': 'Search',
             }
 
     if location == 'url':

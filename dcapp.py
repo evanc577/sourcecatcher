@@ -111,6 +111,7 @@ def dc_app(path):
     kwargs['app_text'] = app_text
     kwargs['profile_pic'] = profile_pic
     kwargs['url'] = path
+    kwargs['page_title'] = f'DC App #{dcapp_id}'
 
     return render_page('dc_app.html', **kwargs)
 

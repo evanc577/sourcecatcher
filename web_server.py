@@ -95,6 +95,7 @@ def handle_exception(e):
             'app_direct_image': False,
             'results': True,
             'error_msg': error_msg,
+            'page_title': 'Error',
             }
     return render_page('error.html', **kwargs)
 
@@ -107,6 +108,7 @@ def entity_too_large(e):
             'app_direct_image': False,
             'results': True,
             'error_msg': EntityTooLarge().__str__(),
+            'page_title': 'Error',
             }
     return render_page('error.html', **kwargs)
 
@@ -172,6 +174,7 @@ def users():
     kwargs = {
             'users': users,
             'user_count': user_count,
+            'page_title': 'Indexed Twitter Users',
             }
 
     return render_page('twitter_users.html', **kwargs)
@@ -227,6 +230,7 @@ def find_and_render(location, path):
             'error_reasons': error_reasons,
             'error_link': error_link,
             'warning_msg': warning_msg,
+            'page_title': 'Error',
             }
 
     if location == 'url':
