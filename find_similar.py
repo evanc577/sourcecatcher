@@ -56,20 +56,31 @@ def find_similar(img_path, location='file', content=None):
 
     # compute histogram
     start_time = time.time()
-    hist = image_detect_and_compute(img_path, location=location, content=content)
+    try:
+        hist = image_detect_and_compute(img_path, location=location, content=content)
+    except cv2.error:
+        return []
+
 
     # find most similar images
     n = 12
     n_trees = index.get_n_trees()
     ann_start_time = time.time()
-    annoy_results = index.get_nns_by_vector(hist, n, include_distances=True, search_k=1000*n*n_trees)
+    annoy_results = index.get_nns_by_vector(hist, n, include_distances=True, search_k=100*n*n_trees)
     ann_end_time = time.time()
 
     # process results
     results = []
+    max_score = -1
     for i,idx in enumerate(annoy_results[0]):
         # discard bad results
         if annoy_results[1][i] > 1.0:
+            break
+
+        score = int(100 * (1 - annoy_results[1][i]))
+        if i == 0:
+            max_score = score
+        elif max_score - score > 10:
             break
 
         # get tweet info
@@ -78,7 +89,6 @@ def find_similar(img_path, location='file', content=None):
         dirname = os.path.dirname(path)
         c.execute('SELECT id FROM info WHERE filename=(?) AND path=(?)', (basename, dirname))
         tweet_id = c.fetchone()[0]
-        score = int(100 * (1 - annoy_results[1][i]))
         tup = (score, tweet_id, basename,)
         results.append(tup)
 

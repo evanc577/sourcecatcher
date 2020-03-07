@@ -46,7 +46,7 @@ def find(location, path, content=None):
     n = 16
     n_trees = index.get_n_trees()
     ann_start_time = time.time()
-    annoy_results = index.get_nns_by_vector(phash_arr, n, include_distances=True, search_k=1000*n*n_trees)
+    annoy_results = index.get_nns_by_vector(phash_arr, n, include_distances=True, search_k=100*n*n_trees)
     ann_end_time = time.time()
 
     # look up the location of the match and its tweet info
@@ -59,7 +59,6 @@ def find(location, path, content=None):
         # find respective image in database
         c.execute('SELECT path, filename FROM hashes WHERE idx=(?)', (idx,))
         dirname, basename = c.fetchone()
-        fullpath = os.path.join(dirname, basename)
         c.execute('SELECT id FROM info WHERE filename=(?) AND path=(?)', (basename, dirname))
         tweet_id = c.fetchone()
         tweet_id = tweet_id[0]
@@ -88,7 +87,7 @@ def load_image(location, path, content=None):
 
         try:
             img = Image.open(BytesIO(content))
-        except IOError as e:
+        except IOError:
             raise InvalidImage
     else:
         try:
