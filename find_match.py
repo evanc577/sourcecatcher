@@ -35,6 +35,11 @@ def find(location, path, content=None):
 
     # load the requested image
     img = load_image(location, path, content=content)
+    try:
+        img.seek(1)
+        raise AnimatedGIFError
+    except EOFError:
+        pass
 
     start_time = time.time()
 

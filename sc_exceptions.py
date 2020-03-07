@@ -72,3 +72,8 @@ class VideoDownloadError(SCError):
 
     def __str__():
         return "Could not download file"
+
+class AnimatedGIFError(SCError):
+
+    def __str__(self):
+        return "Searching animated GIFs is not supported"
