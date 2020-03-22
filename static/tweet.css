@@ -34,6 +34,7 @@ a.tweet_embed img.twitter_logo {
 
 a.tweet_embed div.author {
   float: none;
+  display: -ms-inline-grid;
   display: inline-grid;
   height: 36px;
 }

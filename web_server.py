@@ -18,6 +18,7 @@ import random
 import requests
 import requests_cache
 import sqlite3
+import sys
 import tldextract
 import urllib
 import yaml
@@ -45,7 +46,7 @@ def sha256(filename):
     filename = os.getcwd() + filename
     with open(filename,"rb") as f:
         bytes = f.read() # read entire file as bytes
-        return hashlib.sha256(bytes).hexdigest();
+        return hashlib.sha256(bytes).hexdigest()
 
 app.jinja_env.globals.update(sha256=sha256)
 app.jinja_env.globals.update(urlescape=urlescape)
@@ -78,6 +79,14 @@ except KeyError:
 
 req_expire_after = timedelta(seconds=600)
 cached_req_session = requests_cache.CachedSession('sc_cache', backend='sqlite', expire_after=req_expire_after)
+
+@app.after_request
+def add_header(response):
+    response.cache_control.private = True
+    response.cache_control.max_age = 300
+    response.cache_control.must_revalidate = False
+    return response
+
 
 @app.errorhandler(HTTPException)
 @limiter.exempt
@@ -162,7 +171,7 @@ def link():
 
 @app.route('/twitter_users')
 @limiter.exempt
-def users():
+def twitter_users():
     """Show list of indexed twitter users"""
     conn = sqlite3.connect('live/twitter_scraper.db')
     c = conn.cursor()
@@ -182,9 +191,6 @@ def users():
 
 def find_and_render(location, path):
     """Try to find a matching image and render the results webpage"""
-    app = False
-    app_direct_image = False
-    basename = None
     content = None
     error_msg = None
     error_reasons = None
