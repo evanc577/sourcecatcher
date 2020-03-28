@@ -80,7 +80,16 @@ def download_tweet_media(tweet):
                 filename = download_media(media['media_url_https'], path)
                 if filename is None:
                     return
-                write_exif_date(path, filename, date)
+                try:
+                    write_exif_date(path, filename, date)
+                except OSError:
+                    try:
+                        os.remove(os.path.join(path, filename))
+                    except:
+                        pass
+                    filename = download_media(media['media_url_https'], path)
+                    if filename is None:
+                        return
 
                 # add info
                 try:
