@@ -68,19 +68,26 @@ def image_search(location, path, found, content=None):
 
     if count == 0:
         # try content-based search if no matches are found
-        if location == 'url':
-            found = find_similar(path, location='url', content=content)
-        elif location == 'file':
-            found = find_similar(path, location='file')
-        count = 0
-        for candidate in found:
-            score, tweet_id, basename = candidate
-            if tweet_id in id_score:
-                continue
+        try:
+            if location == 'url':
+                found = find_similar(path, location='url', content=content)
+            elif location == 'file':
+                found = find_similar(path, location='file')
+            count = 0
+            for candidate in found:
+                score, tweet_id, basename = candidate
+                if tweet_id in id_score:
+                    continue
 
-            tweet_ids.append(str(tweet_id))
-            id_score[tweet_id] = score
-            count += 1
+                tweet_ids.append(str(tweet_id))
+                id_score[tweet_id] = score
+                count += 1
+        except ValueError as e:
+            if (str(e).startswith("Expected 2D array, got scalar array instead:")):
+                print("Image too small for experimental matcher")
+                pass
+            else:
+                raise e
 
         if count == 0:
             raise NoMatchesFound
