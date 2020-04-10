@@ -55,7 +55,7 @@
     <div class="tweet_images">
       {% for image in tweet.images %}
       <div class="image_container num_media{{ tweet.num_media }}">
-        <img alt="Twitter image" src="{{ image|e }}" onerror="this.onerror=null;this.src='{{ url_for('static', filename='placeholder.png') }}';">
+        <img alt="Twitter image" src="{{ image|e }}?format=jpg&name=small" onerror="this.onerror=null;this.src='{{ url_for('static', filename='placeholder.png') }}';">
       </div>
       {% endfor %}
     </div>
