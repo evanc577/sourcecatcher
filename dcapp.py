@@ -63,7 +63,7 @@ def dc_app(path):
     dcapp_id = extract_id(path)
 
     # match image urls
-    regex = r"((http://|https://)?file\.candlemystar\.com/cache/.*(_\d+x\d+)\.\w+)"
+    regex = r"(?P<protocol>http:\/\/|https:\/\/)file\.candlemystar\.com\/(?P<cache>cache\/)?.*?(?P<imgdim>_\d+x\d+)?\.\w+"
 
     try:
         # try to find video
@@ -72,16 +72,18 @@ def dc_app(path):
     except:
         # find all images from app post
         images_html = ''.join([str(h) for h in parsed_html.body.find_all('div', attrs={'class': 'img-box'})])
-        x = re.findall(regex, images_html)
+        x = re.finditer(regex, images_html)
 
         # create urls for full-size images
         files = []
-        for url in x:
-            temp = url[0]
-            temp = temp.replace('cache/', '')
-            temp = temp.replace('thumb-', '')
-            temp = temp.replace(url[2], '')
-            files.append(temp)
+        for match in x:
+            url = match.group(0)
+            if match.groupdict()["cache"] is not None:
+                url = url.replace(match.groupdict()["cache"], '')
+            url = url.replace('thumb-', '')
+            if match.groupdict()["imgdim"] is not None:
+                url = url.replace(match.groupdict()["imgdim"], '')
+            files.append(url)
 
         # remove duplicates
         app_images = list(OrderedDict.fromkeys(files))
@@ -93,12 +95,14 @@ def dc_app(path):
     # find profile picture
     profile_pic = parsed_html.body.find('div', attrs={'class': 'profile-img'}).find('img').attrs['src']
     try:
-        x = re.findall(regex, profile_pic)[0]
-        temp = x[0]
-        temp = temp.replace('cache/', '')
-        temp = temp.replace('thumb-', '')
-        temp = temp.replace(x[2], '')
-        profile_pic = temp
+        match = re.match(regex, profile_pic)
+        url = match.group(0)
+        if match.groupdict()["cache"] is not None:
+            url = url.replace(match.groupdict()["cache"], '')
+        url = url.replace('thumb-', '')
+        if match.groupdict()["imgdim"] is not None:
+            url = url.replace(match.groupdict()["imgdim"], '')
+        profile_pic = url
     except Exception as e:
         print(f"Error getting full size profile picture {e}")
 
