@@ -32,9 +32,9 @@ python bot.py
 python gen_phashes.py
 python feature_match.py
 
-cp $WORKING_DIR/twitter_scraper.db $LIVE_DIR
-cp $WORKING_DIR/phash_index.ann $LIVE_DIR
-cp $WORKING_DIR/descriptors.pkl $LIVE_DIR
-cp $WORKING_DIR/BOW_annoy_map.pkl $LIVE_DIR
-cp $WORKING_DIR/kmeans.pkl $LIVE_DIR
-cp $WORKING_DIR/BOW_index.ann $LIVE_DIR
+mv -f $WORKING_DIR/twitter_scraper.db $LIVE_DIR
+mv -f $WORKING_DIR/phash_index.ann $LIVE_DIR
+mv -f $WORKING_DIR/descriptors.pkl $LIVE_DIR
+mv -f $WORKING_DIR/BOW_annoy_map.pkl $LIVE_DIR
+mv -f $WORKING_DIR/kmeans.pkl $LIVE_DIR
+mv -f $WORKING_DIR/BOW_index.ann $LIVE_DIR
