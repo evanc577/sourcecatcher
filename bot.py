@@ -211,7 +211,9 @@ if __name__ == "__main__":
                 pass
         except tweepy.error.TweepError as e:
             print("tweepy error {}".format(e))
-            if e.response.status_code == 404:
+
+            # 4XX response status code
+            if e.response.status_code // 10 == 40:
                 try:
                     c.execute('INSERT INTO deleted_users VALUES (?)', (user,))
                     conn.commit()
