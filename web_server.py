@@ -20,6 +20,7 @@ import requests_cache
 import sqlite3
 import sys
 import tldextract
+import traceback
 import urllib
 import yaml
 
@@ -175,10 +176,23 @@ def twitter_users():
     """Show list of indexed twitter users"""
     conn = sqlite3.connect('live/twitter_scraper.db')
     c = conn.cursor()
+
+    # get all users
     c.execute('SELECT user FROM users')
     users = c.fetchall()
+
+    # get deleted users
+    try:
+        c.execute('SELECT user FROM deleted_users')
+        deleted_users = [x[0] for x in c.fetchall()]
+    except:
+        deleted_users = []
+
     c.close()
-    users = [tup[0] for tup in sorted(users)]
+
+    # combine users and deleted users
+    users = [(tup[0], tup[0] not in deleted_users) for tup in sorted(users)]
+
     user_count = len(users)
     kwargs = {
             'users': users,
@@ -229,6 +243,7 @@ def find_and_render(location, path):
 
     except Exception as e:
         error_msg = "An unknown error occurred"
+        traceback.print_exc()
         print(e)
 
     kwargs = {

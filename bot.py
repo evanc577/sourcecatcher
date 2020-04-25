@@ -150,6 +150,7 @@ if __name__ == "__main__":
     c.execute('CREATE TABLE IF NOT EXISTS info (filename text, path text, user text, id int64, UNIQUE (filename, path))')
     c.execute('CREATE TABLE IF NOT EXISTS tweet_text (id int64, text text, UNIQUE (id))')
     c.execute('CREATE TABLE IF NOT EXISTS hashtags (hashtag text, id int64, UNIQUE (hashtag, id))')
+    c.execute('CREATE TABLE IF NOT EXISTS deleted_users (user text, UNIQUE (user))')
 
     count = 0
 
@@ -203,8 +204,19 @@ if __name__ == "__main__":
                 tweets = api.user_timeline(user, **tweepy_kwargs)
             else:
                 tweets = api.user_timeline(user, since_id=last_id+1, **tweepy_kwargs)
+            try:
+                c.execute('DELETE FROM deleted_users WHERE user=(?)', (user,))
+                conn.commit()
+            except:
+                pass
         except tweepy.error.TweepError as e:
             print("tweepy error {}".format(e))
+            if e.response.status_code == 404:
+                try:
+                    c.execute('INSERT INTO deleted_users VALUES (?)', (user,))
+                    conn.commit()
+                except:
+                    pass
             continue
 
 

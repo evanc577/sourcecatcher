@@ -608,6 +608,10 @@ ul.users_list {
   margin: 20px auto;
 }
 
+.deleted_user:before {
+    content: "\274C";
+}
+
 @media screen and (max-width: 400px) {
   .brand a::after {
     content: "SC";

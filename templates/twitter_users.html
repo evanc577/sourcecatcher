@@ -8,7 +8,13 @@
 <div class="results">
   <ul class="users_list">
     {% for user in users %}
-    <li><a href="https://www.twitter.com/{{ user|e }}" target="_blank" rel="noopener noreferrer">{{ user|e }}</a></li>
+    {% if user[1] %}
+    <li>
+    {% else %}
+    <li class="deleted_user">
+    {% endif %}
+        <a href="https://www.twitter.com/{{ user[0]|e }}" target="_blank" rel="noopener noreferrer">{{ user[0]|e }}</a>
+    </li>
     {% endfor %}
   </ul>
 </div>
