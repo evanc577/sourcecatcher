@@ -608,7 +608,7 @@ ul.users_list {
   margin: 20px auto;
 }
 
-.deleted_user:before {
+.deleted_user:after {
     content: "\274C";
 }
 
