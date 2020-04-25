@@ -40,6 +40,10 @@ def find(location, path, content=None):
         raise AnimatedGIFError
     except EOFError:
         pass
+    except ValueError:
+        pass
+    except:
+        pass
 
     start_time = time.time()
 
