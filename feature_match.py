@@ -156,7 +156,7 @@ def gen_cbir():
 
     # add histograms to annoy index
     files = enumerate(files)
-    with Pool(processes=num_cpus) as pool:
+    with Pool(processes=1) as pool:
         for r in pool.imap(compute_histograms, files, chunksize=64):
             if not isinstance(r, Exception):
                 index.add_item(r[0], r[2])

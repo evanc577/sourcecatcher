@@ -66,7 +66,7 @@ def find_similar(img_path, location='file', content=None):
     n = 12
     n_trees = index.get_n_trees()
     ann_start_time = time.time()
-    annoy_results = index.get_nns_by_vector(hist, n, include_distances=True, search_k=10*n*n_trees)
+    annoy_results = index.get_nns_by_vector(hist, n, include_distances=True, search_k=-1)
     ann_end_time = time.time()
 
     # process results
