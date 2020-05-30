@@ -1,6 +1,7 @@
 from multiprocessing import Pool, TimeoutError, cpu_count
 import numpy as np
 import cv2
+import gc
 import sys
 import os
 import sqlite3
@@ -94,6 +95,9 @@ def gen_cbir():
     print('files to compute: {}'.format(len(files)))
     files = enumerate(files)
 
+    del done_descriptors
+    gc.collect()
+
     # extract features from new images
     new_descriptors = {}
     with Pool(processes=num_cpus) as pool:
@@ -133,6 +137,8 @@ def gen_cbir():
     if cur is not None:
         kmeans = kmeans.partial_fit(np.float32(cur))
 
+    del new_descriptors
+    gc.collect()
 
     # save descriptors and kmeans
     joblib.dump(descriptors, 'working/descriptors.pkl')
@@ -151,6 +157,9 @@ def gen_cbir():
     enum_files = enumerate(files)
     for i,f in enum_files:
         BOW_annoy_map[i] = f[0]
+
+    del descriptors
+    gc.collect()
 
     index = AnnoyIndex(n_clusters, 'angular')
     index.on_disk_build('working/BOW_index.ann')

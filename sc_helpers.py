@@ -21,10 +21,12 @@ def stats():
     conn = sqlite3.connect('live/twitter_scraper.db')
     c = conn.cursor()
 
-    c.execute('SELECT COUNT() FROM info')
+    # c.execute('SELECT COUNT() FROM info')
+    c.execute('SELECT MAX(_ROWID_) FROM info LIMIT 1')
     num_photos = c.fetchone()[0]
 
-    c.execute('SELECT COUNT() FROM tweet_text')
+    # c.execute('SELECT COUNT() FROM tweet_text')
+    c.execute('SELECT MAX(_ROWID_) FROM tweet_text LIMIT 1')
     num_tweets = c.fetchone()[0]
 
     mtime = datetime.utcfromtimestamp(os.path.getmtime('live/phash_index.ann'))
