@@ -153,6 +153,7 @@ def gen_cbir():
         BOW_annoy_map[i] = f[0]
 
     index = AnnoyIndex(n_clusters, 'angular')
+    index.on_disk_build('working/BOW_index.ann')
 
     # add histograms to annoy index
     files = enumerate(files)
