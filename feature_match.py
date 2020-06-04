@@ -10,6 +10,7 @@ from sklearn.cluster import MiniBatchKMeans
 import joblib
 from annoy import AnnoyIndex
 import yaml
+import bsddb3
 
 detector = cv2.ORB_create()
 computer = cv2.xfeatures2d.FREAK_create()
@@ -36,12 +37,10 @@ def extract_features(f, des_length=2048):
         print(e)
         return e
 
-def compute_histograms(f):
+def compute_histograms(idx, path, descriptors):
     """Compute histograms for bag of (visual) words"""
     try:
-        idx = f[0]
-        path = f[1][0]
-        des = f[1][1]
+        des = deserialize(descriptors[path.encode()])
         print(f'histograms: idx={idx:08d} path={path}')
         indices = kmeans.predict(des)
         hist = np.zeros(kmeans.cluster_centers_.shape[0], dtype=np.float32)
@@ -50,8 +49,13 @@ def compute_histograms(f):
 
         return idx, path, hist
     except Exception as e:
+        print(path)
         print(e)
         return e
+
+
+def deserialize(s):
+    return np.frombuffer(s, dtype="uint8").reshape((-1, 64))
 
 
 def gen_cbir():
@@ -60,6 +64,7 @@ def gen_cbir():
     global kmeans
 
     # parse config.yaml
+    print("parsing config")
     try:
         dirpath = os.path.dirname(os.path.realpath(__file__))
         path = os.path.join(dirpath, 'config.yaml')
@@ -74,37 +79,37 @@ def gen_cbir():
         num_cpus = cpu_count()
 
     # connect to sqlite database
+    print("connecting to databases")
     conn = sqlite3.connect('working/twitter_scraper.db')
     c = conn.cursor()
 
     # load descriptors
-    done_descriptors = set()
-    descriptors = {}
-    try:
-        descriptors = joblib.load('working/descriptors.pkl')
-        for k,v in descriptors.items():
-            done_descriptors.add(k)
-    except Exception as e:
-        pass
+    descriptors = bsddb3.db.DB()
+    descriptors.open("working/descriptors.bdb")
 
     # calculate descriptors of new images
+    print("determine files to compute")
     c.execute('SELECT path, filename FROM info')
     files = c.fetchall()
     files = [os.path.join(a,b) for a,b in files]
-    files = set(files) - done_descriptors
-    print('files to compute: {}'.format(len(files)))
-    files = enumerate(files)
-
-    del done_descriptors
-    gc.collect()
+    compute_files = set()
+    for i,f in enumerate(files):
+        if descriptors.get(f.encode()) is None:
+            compute_files.add(f)
+        if i % 10000 == 0:
+            print(i)
+    print('files to compute: {}'.format(len(compute_files)))
+    files = enumerate(compute_files)
 
     # extract features from new images
+    print("computing descriptors")
     new_descriptors = {}
     with Pool(processes=num_cpus) as pool:
         for r in pool.imap(extract_features, files, chunksize=64):
             if not isinstance(r, Exception):
-                descriptors[r[1]] = r[2]
-                new_descriptors[r[1]] = r[2]
+                des = deserialize(r[2])
+                descriptors[r[1].encode()] = des
+                new_descriptors[r[1]] = des
 
     # create clusters
     try:
@@ -115,6 +120,7 @@ def gen_cbir():
         kmeans = MiniBatchKMeans(n_clusters=n_clusters, batch_size=2048)
 
     # calculate kmeans
+    print("calculating kmeans")
     cur = None
     for i,des in enumerate(new_descriptors.items()):
         if des[1] is not None:
@@ -140,40 +146,42 @@ def gen_cbir():
     del new_descriptors
     gc.collect()
 
-    # save descriptors and kmeans
-    joblib.dump(descriptors, 'working/descriptors.pkl')
+    # save kmeans
+    print("saving kmeans")
     joblib.dump(kmeans, 'working/kmeans.pkl')
 
     # set up structures for annoy index
+    print("setting up annoy structures")
     c.execute('SELECT path, filename FROM info')
     all_images = c.fetchall()
     files = []
     for f in all_images:
         fullpath = os.path.join(f[0], f[1])
-        if fullpath in descriptors:
-            files.append((fullpath, descriptors[fullpath]))
-    max_idx = len(files)
+        if descriptors.get(fullpath.encode()) is not None:
+            files.append(fullpath)
     BOW_annoy_map = {}
-    enum_files = enumerate(files)
-    for i,f in enum_files:
-        BOW_annoy_map[i] = f[0]
-
-    del descriptors
-    gc.collect()
+    for i,f in enumerate(files):
+        BOW_annoy_map[i] = f
 
     index = AnnoyIndex(n_clusters, 'angular')
     index.on_disk_build('working/BOW_index.ann')
 
     # add histograms to annoy index
-    files = enumerate(files)
-    with Pool(processes=1) as pool:
-        for r in pool.imap(compute_histograms, files, chunksize=64):
-            if not isinstance(r, Exception):
-                index.add_item(r[0], r[2])
+    print("computing histograms")
+    for i,f in enumerate(files):
+        r = compute_histograms(i, f, descriptors)
+        if not isinstance(r, Exception):
+            index.add_item(r[0], r[2])
+    
+    # build index
+    print("building index")
     index.build(50)
-    index.save('working/BOW_index.ann')
+
+    descriptors.sync()
+    descriptors.close()
 
     # save index map
+    print("saving annoy map")
     joblib.dump(BOW_annoy_map, 'working/BOW_annoy_map.pkl')
 
 if __name__ == '__main__':
