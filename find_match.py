@@ -35,15 +35,7 @@ def find(location, path, content=None):
 
     # load the requested image
     img = load_image(location, path, content=content)
-    try:
-        img.seek(1)
-        raise AnimatedGIFError
-    except EOFError:
-        pass
-    except ValueError:
-        pass
-    except:
-        pass
+
 
     start_time = time.time()
 
@@ -103,6 +95,13 @@ def load_image(location, path, content=None):
             img = Image.open(path)
         except IOError as e:
             raise InvalidImage
+
+    # check if GIF is not animated
+    try:
+        if img.is_animated:
+            raise AnimatedGIFError
+    except AttributeError:
+        pass
 
     return img
 
