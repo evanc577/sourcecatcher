@@ -105,8 +105,7 @@ def image_search(location, path, found, content=None):
 
         # create tweet cards
         try:
-            lookedup_tweets = sorted(api.statuses_lookup(tweet_ids, **tweepy_kwargs),
-                    key=lambda x: (-id_score[x._json['id']], x._json['id']))
+            lookedup_tweets = api.statuses_lookup(tweet_ids, **tweepy_kwargs)
             for lookedup_tweet in lookedup_tweets:
                 lookedup_tweet = lookedup_tweet._json
                 score = id_score[lookedup_tweet['id']]
@@ -126,6 +125,11 @@ def image_search(location, path, found, content=None):
         # add tweets that have been removed
         for tweet_id in todo_ids:
             tweets.append(get_saved_tweet(tweet_id, id_score[int(tweet_id)]))
+
+        # sort tweets by score then by id (date)
+        for tweet in tweets:
+            print(f"{type(tweet['score'])} {type(tweet['tweet_id'])} {tweet['score']} {tweet['tweet_id']}")
+        tweets.sort(key=lambda tweet: (-tweet['score'], tweet['tweet_id']))
 
     # show error if no tweets are found
     if len(tweets) == 0:
@@ -154,7 +158,7 @@ def get_saved_tweet(tweet_id, score):
     tweet['custom'] = True
     tweet['is_backup'] = True
     tweet['score'] = score
-    tweet['tweet_id'] = tweet_id
+    tweet['tweet_id'] = int(tweet_id)
 
     c.execute('SELECT * FROM tweet_text where id=(?)', (tweet_id,))
     _, text = c.fetchone()
