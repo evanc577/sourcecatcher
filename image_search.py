@@ -127,8 +127,6 @@ def image_search(location, path, found, content=None):
             tweets.append(get_saved_tweet(tweet_id, id_score[int(tweet_id)]))
 
         # sort tweets by score then by id (date)
-        for tweet in tweets:
-            print(f"{type(tweet['score'])} {type(tweet['tweet_id'])} {tweet['score']} {tweet['tweet_id']}")
         tweets.sort(key=lambda tweet: (-tweet['score'], tweet['tweet_id']))
 
     # show error if no tweets are found
@@ -159,6 +157,10 @@ def get_saved_tweet(tweet_id, score):
     tweet['is_backup'] = True
     tweet['score'] = score
     tweet['tweet_id'] = int(tweet_id)
+
+    # calculate timestamp from id
+    ts = id2ts(tweet_id)
+    tweet['ts'] = datetime.utcfromtimestamp(ts).isoformat() + "+00:00"
 
     c.execute('SELECT * FROM tweet_text where id=(?)', (tweet_id,))
     _, text = c.fetchone()
@@ -222,3 +224,6 @@ def calc_score_percent(score):
         return 0
 
     return int(100 - 100 * score / 32)
+
+def id2ts(tweet_id):
+    return ((int(tweet_id)>>22) + 1288834974657) / 1000
