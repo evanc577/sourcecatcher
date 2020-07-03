@@ -197,7 +197,12 @@ def get_custom_embed(lookedup_tweet, score):
     tweet['ts'] = lookedup_tweet['created_at']
 
     # process tweet images
-    media = lookedup_tweet['extended_entities']['media']
+    try:
+        media = lookedup_tweet['extended_entities']['media']
+    except KeyError:
+        # use placeholder if media is protected
+        media = [{'media_url_https': '/static/placeholder.png'}]
+
     tweet['num_media'] = len(media)
     images = []
     for m in media:
