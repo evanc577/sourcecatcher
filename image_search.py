@@ -31,6 +31,16 @@ try:
 except KeyError:
     print("could not parse config file")
     sys.exit(1)
+try:
+    temp = config['priority_users']
+    num_prio_users = len(temp)
+    priority_users = {}
+    for i in range(num_prio_users):
+        priority_users[temp[i].casefold()] = i
+
+except KeyError:
+    num_prio_users = 0
+    priority_users = {}
 
 # set up tweepy
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
@@ -126,8 +136,20 @@ def image_search(location, path, found, content=None):
         for tweet_id in todo_ids:
             tweets.append(get_saved_tweet(tweet_id, id_score[int(tweet_id)]))
 
+        # limit each twitter user to 3 tweets
+        user_count = {}
+        temp = []
+        for tweet in tweets:
+            if tweet['screen_name'].casefold() not in user_count:
+                user_count[tweet['screen_name'].casefold()] = 0
+            if user_count[tweet['screen_name'].casefold()] >= 3:
+                continue
+            user_count[tweet['screen_name'].casefold()] += 1
+            temp.append(tweet)
+        tweets = temp
+
         # sort tweets by score then by id (date)
-        tweets.sort(key=lambda tweet: (-tweet['score'], tweet['tweet_id']))
+        tweets.sort(key=lambda tweet: (priority(tweet['screen_name']), -min(90, tweet['score']), tweet['tweet_id']))
 
     # show error if no tweets are found
     if len(tweets) == 0:
@@ -143,6 +165,16 @@ def image_search(location, path, found, content=None):
         kwargs['url'] = path
 
     return render_page('match_results.html', **kwargs)
+
+def priority(user):
+    """
+    return the priority if the given twitter user based on config file
+    """
+
+    if user.casefold() in priority_users:
+        return priority_users[user.casefold()]
+
+    return num_prio_users
 
 
 def get_saved_tweet(tweet_id, score):
