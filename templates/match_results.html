@@ -17,12 +17,12 @@
     {% if tweet.is_backup %}
     <div class="warning backup_tweet">This tweet is no longer available</div>
     {% endif %}
-    <img class="twitter_logo" src="{{ url_for('static', filename='Twitter_Logo_Blue.svg') }}">
+    <img class="twitter_logo" alt="Twitter logo" src="{{ url_for('static', filename='Twitter_Logo_Blue.svg') }}">
     <div class="author">
       {% if tweet.is_backup %}
-      <img class="avatar" src="{{ url_for('static', filename='user_profile.png') }}">
+      <img class="avatar" alt="{{ tweet.screen_name|e }} avatar"src="{{ url_for('static', filename='user_profile.png') }}">
       {% else %}
-      <img class="avatar" src="{{ tweet.profile_image|e }}" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_profile.png') }}';">
+      <img class="avatar" alt="{{ tweet.screen_name|e }} avatar" src="{{ tweet.profile_image|e }}" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_profile.png') }}';">
       {% endif %}
       <div class="name_container">
         <span class="identity_name">

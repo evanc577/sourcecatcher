@@ -83,9 +83,15 @@ cached_req_session = requests_cache.CachedSession('sc_cache', backend='sqlite', 
 
 @app.after_request
 def add_header(response):
-    response.cache_control.public = True
-    response.cache_control.max_age = 300
-    response.cache_control.must_revalidate = False
+    if response.mimetype == 'text/html':
+        response.cache_control.public = True
+        response.cache_control.max_age = 300 # 5 minutes
+        response.cache_control.must_revalidate = True
+        pass
+    else:
+        response.cache_control.public = True
+        response.cache_control.max_age = 2678400 # 31 days
+        response.cache_control.must_revalidate = False
     return response
 
 
@@ -107,7 +113,7 @@ def handle_exception(e):
             'error_msg': error_msg,
             'page_title': 'Error',
             }
-    return render_page('error.html', **kwargs)
+    return render_page('error.html', code=e.code, **kwargs)
 
 @app.errorhandler(413)
 @limiter.exempt
@@ -210,6 +216,7 @@ def find_and_render(location, path):
     error_reasons = None
     error_link = None
     warning_msg = None
+    code = 200
 
     try:
         if location == 'url':
@@ -235,15 +242,18 @@ def find_and_render(location, path):
     except NoMatchesFound as e:
         error_msg = str(e)
         error_reasons = e.reasons()
+        code = 404
         print(e)
 
     except SCError as e:
         error_msg = str(e)
+        code = 400
         print(e)
 
     except Exception as e:
         error_msg = "An unknown error occurred"
         traceback.print_exc()
+        code = 500
         print(e)
 
     kwargs = {
@@ -252,6 +262,7 @@ def find_and_render(location, path):
             'error_link': error_link,
             'warning_msg': warning_msg,
             'page_title': 'Error',
+            'code': code,
             }
 
     if location == 'url':

@@ -1,4 +1,4 @@
-from flask import render_template
+from flask import render_template, make_response
 from datetime import datetime
 import sqlite3
 import os
@@ -6,14 +6,15 @@ import requests
 from sc_exceptions import *
 
 
-def render_page(template, **kwargs):
+def render_page(template, code=200, **kwargs):
     """Get stats and render template"""
     num_photos, num_tweets, mtime = stats()
     kwargs['num_photos'] = num_photos
     kwargs['num_tweets'] = num_tweets
     kwargs['mtime'] = mtime
 
-    return render_template(template, **kwargs)
+    resp = make_response(render_template(template, **kwargs), code)
+    return resp
 
 
 def stats():
