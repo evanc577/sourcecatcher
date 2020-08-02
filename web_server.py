@@ -83,7 +83,7 @@ cached_req_session = requests_cache.CachedSession('sc_cache', backend='sqlite', 
 
 @app.after_request
 def add_header(response):
-    response.cache_control.private = True
+    response.cache_control.public = True
     response.cache_control.max_age = 300
     response.cache_control.must_revalidate = False
     return response
