@@ -101,4 +101,4 @@ def find_similar(img_path, location='file', content=None):
     return results
 
 if __name__ == "__main__":
-    find_similar(sys.argv[1])
+    find_similar(sys.argv[2], location=sys.argv[1])

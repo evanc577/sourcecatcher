@@ -224,7 +224,8 @@ def find_and_render(location, path):
             if extract.subdomain == 'dreamcatcher' and \
                     extract.domain == 'candlemystar' and \
                     extract.suffix == 'com':
-                return dc_app(path)
+                raise SCError('DC App has closed is no longer supported')
+                #  return dc_app(path)
             else:
                 content = download_content(path)
                 found = find('url', path, content=content)
