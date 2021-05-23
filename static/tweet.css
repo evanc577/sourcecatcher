@@ -113,6 +113,7 @@
 }
 
 .tweet_embed:hover {
+  background-color: var(--tweet-hover-bg-color);
   box-shadow: 0px 0px 20px var(--box-shadow-color);
 }
 
