@@ -55,8 +55,8 @@
     </div>
     <div class="tweet_images">
       {% for image in tweet.images %}
-      <a class="image_container num_media{{ tweet.num_media }}" target="_blank" rel="noopener noreferrer" title="Open image" href="{{ image|e }}?format=jpg&name=orig">
-        <img alt="Twitter image" src="{{ image|e }}?format=jpg&name=small" onerror="this.onerror=null;this.src='{{ url_for('static', filename='placeholder.png') }}';">
+      <a class="image_container num_media{{ tweet.num_media }}" target="_blank" rel="noopener noreferrer" title="Open image" href="{{ image|e }}?name=orig">
+        <img alt="Twitter image" src="{{ image|e }}?name=small" onerror="this.onerror=null;this.src='{{ url_for('static', filename='placeholder.png') }}';">
       </a>
       {% endfor %}
     </div>
