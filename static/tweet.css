@@ -1,3 +1,102 @@
+.author > .avatar {
+  grid-column: 1;
+  border-radius: 50%;
+  height: 36px;
+  width: 36px;
+  margin: 20px 10px 20px 20px;
+}
+
+.author {
+  float: none;
+  display: -ms-inline-grid;
+  display: inline-grid;
+  height: 36px;
+}
+
+.backup_tweet {
+  margin: 20px 20px 0 20px;
+}.image_container > img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  top: 0; bottom: 0; left: 0; right: 0;
+  transition: 0.1s;
+}
+
+.image_container > img:hover {
+  transform: scale(1.05);
+}
+
+.image_container {
+  position: relative;
+  width: 40%;
+  margin: 3px;
+  padding-top: 30%;
+  flex: 1 0 34%;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.image_container.num_media1,
+.image_container.num_media2 {
+  padding-top: 60%;
+}
+
+.image_container:hover {
+  box-shadow: 0 0 1px 3px var(--dc-yellow);
+}
+
+.name_container > span.identity_name {
+  color: var(--fg-color);
+  font-weight: 700;
+  font-size: 1.1em;
+}
+
+.name_container > span.screen_name {
+  color: var(--fg2-color);
+  font-size: 0.9em;
+}
+
+.name_container {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tweet_embed > .datetime {
+  font-size: 0.9em;
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 10px;
+  color: var(--fg2-color);
+}
+
+.tweet_embed > .match_score {
+  margin: 20px 20px 0px 20px;
+  font-size: 1em;
+  color: var(--fg2-color);
+}
+
+.tweet_embed > .tweet_images {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  margin-top: 5px;
+  margin-bottom: 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.tweet_embed > .tweet_text {
+  float: none;
+  font-size: 1em;
+  color: var(--fg-color);
+  margin: 20px;
+}
+
 .tweet_embed {
   text-decoration: none;
   position: relative;
@@ -14,13 +113,7 @@
 }
 
 .tweet_embed:hover {
-  background-color: var(--tweet-hover-bg-color);
-}
-
-.image_container img:hover {
-  outline-width: medium;
-  outline-style: solid;
-  outline-color: grey;
+  box-shadow: 0px 0px 20px var(--box-shadow-color);
 }
 
 .tweet_embed:visited {
@@ -36,7 +129,7 @@
   right: 0;
 }
 
-.tweet_embed img.twitter_logo {
+.twitter_logo {
   display: inline-block;
   position: absolute;
   margin-top: 10px;
@@ -45,98 +138,4 @@
   right: 0;
   width: 36px;
   height: 36px;
-}
-
-.tweet_embed .author {
-  float: none;
-  display: -ms-inline-grid;
-  display: inline-grid;
-  height: 36px;
-}
-
-.tweet_embed .author img.avatar {
-  grid-column: 1;
-  border-radius: 50%;
-  height: 36px;
-  width: 36px;
-  margin: 20px 10px 20px 20px;
-}
-
-.tweet_embed .author .name_container {
-  grid-column: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.tweet_embed .author .name_container span.identity_name {
-  color: var(--fg-color);
-  font-weight: 700;
-  font-size: 1.1em;
-}
-
-.tweet_embed .author .name_container span.screen_name {
-  color: var(--fg2-color);
-  font-size: 0.9em;
-}
-
-.tweet_embed .tweet_text {
-  float: none;
-  font-size: 1em;
-  color: var(--fg-color);
-  margin: 20px;
-}
-
-.tweet_embed .tweet_images {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  margin-top: 5px;
-  margin-bottom: 20px;
-  padding-left: 20px;
-  padding-right: 20px;
-}
-
-.tweet_embed .tweet_images .image_container {
-  position: relative;
-  width: 40%;
-  margin: 1px;
-  padding-top: 30%;
-  flex: 1 0 34%;
-  z-index: 1;
-}
-
-.tweet_embed .tweet_images .image_container.num_media1 {
-  padding-top: 60%;
-}
-
-.tweet_embed .tweet_images .image_container.num_media2 {
-  padding-top: 60%;
-}
-
-.tweet_embed .tweet_images .image_container img {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  top: 0; bottom: 0; left: 0; right: 0;
-}
-
-.tweet_embed .datetime {
-  font-size: 0.9em;
-  margin-left: 20px;
-  margin-right: 20px;
-  margin-top: 10px;
-  color: var(--fg2-color);
-}
-
-.tweet_embed .match_score {
-  margin: 20px 20px 0px 20px;
-  font-size: 1em;
-  color: var(--fg2-color);
-}
-
-.backup_tweet {
-  margin: 20px 20px 0 20px;
 }
