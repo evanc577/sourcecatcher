@@ -12,7 +12,8 @@
 <div class="results">
   {% for tweet in tweets %}
   {% if tweet.custom %}
-  <a class="tweet_embed" target="_blank" rel="noopener noreferrer" title="View on Twitter" href="https://twitter.com/{{ tweet.screen_name|e }}/status/{{ tweet.tweet_id }}">
+  <div class="tweet_embed">
+    <a class="tweet_embed_link" target="_blank" rel="noopener noreferrer" title="View on Twitter" href="https://twitter.com/{{ tweet.screen_name|e }}/status/{{ tweet.tweet_id }}"></a>
     <div class="match_score">Similarity: {{ tweet.score }}</div>
     {% if tweet.is_backup %}
     <div class="warning backup_tweet">This tweet is no longer available</div>
@@ -54,12 +55,12 @@
     </div>
     <div class="tweet_images">
       {% for image in tweet.images %}
-      <div class="image_container num_media{{ tweet.num_media }}">
+      <a class="image_container num_media{{ tweet.num_media }}" target="_blank" rel="noopener noreferrer" title="Open image" href="{{ image|e }}?format=jpg&name=orig">
         <img alt="Twitter image" src="{{ image|e }}?format=jpg&name=small" onerror="this.onerror=null;this.src='{{ url_for('static', filename='placeholder.png') }}';">
-      </div>
+      </a>
       {% endfor %}
     </div>
-  </a>
+  </div>
   {% else %}
   {{ tweet.embed_tweet|safe }}
   {% endif %}

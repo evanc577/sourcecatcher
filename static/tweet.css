@@ -1,4 +1,4 @@
-a.tweet_embed {
+.tweet_embed {
   text-decoration: none;
   position: relative;
   display: block;
@@ -13,15 +13,30 @@ a.tweet_embed {
   background-color: var(--tweet-bg-color);
 }
 
-a.tweet_embed:hover {
+.tweet_embed:hover {
   background-color: var(--tweet-hover-bg-color);
 }
 
-a.tweet_embed:visited {
+.image_container img:hover {
+  outline-width: medium;
+  outline-style: solid;
+  outline-color: grey;
+}
+
+.tweet_embed:visited {
   color: inherit;
 }
 
-a.tweet_embed img.twitter_logo {
+.tweet_embed_link::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+}
+
+.tweet_embed img.twitter_logo {
   display: inline-block;
   position: absolute;
   margin-top: 10px;
@@ -32,14 +47,14 @@ a.tweet_embed img.twitter_logo {
   height: 36px;
 }
 
-a.tweet_embed div.author {
+.tweet_embed .author {
   float: none;
   display: -ms-inline-grid;
   display: inline-grid;
   height: 36px;
 }
 
-a.tweet_embed div.author img.avatar {
+.tweet_embed .author img.avatar {
   grid-column: 1;
   border-radius: 50%;
   height: 36px;
@@ -47,32 +62,32 @@ a.tweet_embed div.author img.avatar {
   margin: 20px 10px 20px 20px;
 }
 
-a.tweet_embed div.author div.name_container {
+.tweet_embed .author .name_container {
   grid-column: 2;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-a.tweet_embed div.author div.name_container span.identity_name {
+.tweet_embed .author .name_container span.identity_name {
   color: var(--fg-color);
   font-weight: 700;
   font-size: 1.1em;
 }
 
-a.tweet_embed div.author div.name_container span.screen_name {
+.tweet_embed .author .name_container span.screen_name {
   color: var(--fg2-color);
   font-size: 0.9em;
 }
 
-a.tweet_embed div.tweet_text {
+.tweet_embed .tweet_text {
   float: none;
   font-size: 1em;
   color: var(--fg-color);
   margin: 20px;
 }
 
-a.tweet_embed div.tweet_images {
+.tweet_embed .tweet_images {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -83,23 +98,24 @@ a.tweet_embed div.tweet_images {
   padding-right: 20px;
 }
 
-a.tweet_embed div.tweet_images div.image_container {
+.tweet_embed .tweet_images .image_container {
   position: relative;
   width: 40%;
   margin: 1px;
   padding-top: 30%;
   flex: 1 0 34%;
+  z-index: 1;
 }
 
-a.tweet_embed div.tweet_images div.image_container.num_media1 {
+.tweet_embed .tweet_images .image_container.num_media1 {
   padding-top: 60%;
 }
 
-a.tweet_embed div.tweet_images div.image_container.num_media2 {
+.tweet_embed .tweet_images .image_container.num_media2 {
   padding-top: 60%;
 }
 
-a.tweet_embed div.tweet_images div.image_container img {
+.tweet_embed .tweet_images .image_container img {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -107,7 +123,7 @@ a.tweet_embed div.tweet_images div.image_container img {
   top: 0; bottom: 0; left: 0; right: 0;
 }
 
-a.tweet_embed div.datetime {
+.tweet_embed .datetime {
   font-size: 0.9em;
   margin-left: 20px;
   margin-right: 20px;
@@ -115,7 +131,7 @@ a.tweet_embed div.datetime {
   color: var(--fg2-color);
 }
 
-a.tweet_embed div.match_score {
+.tweet_embed .match_score {
   margin: 20px 20px 0px 20px;
   font-size: 1em;
   color: var(--fg2-color);
