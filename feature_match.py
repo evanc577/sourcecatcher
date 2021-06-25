@@ -85,7 +85,10 @@ def gen_cbir():
 
     # load descriptors
     descriptors = bsddb3.db.DB()
-    descriptors.open("working/descriptors.bdb")
+    if os.path.exists("working/descriptors.bdb"):
+        descriptors.open("working/descriptors.bdb")
+    else:
+        descriptors.open("working/descriptors.bdb", dbtype=bsddb3.db.DB_BTREE, flags=bsddb3.db.DB_CREATE)
 
     # calculate descriptors of new images
     print("determine files to compute")
