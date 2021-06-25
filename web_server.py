@@ -55,7 +55,7 @@ app.jinja_env.globals.update(urlescape=urlescape)
 limiter = Limiter(
     app,
     key_func=get_remote_address,
-    default_limits=["30 per minute", "1 per second"],
+    #  default_limits=["30 per minute", "1 per second"],
 )
 
 # parse config.yaml
@@ -96,7 +96,6 @@ def add_header(response):
 
 
 @app.errorhandler(HTTPException)
-@limiter.exempt
 def handle_exception(e):
     """Generic http error handler"""
     if request.full_path == '/' or request.full_path == '/?':
@@ -116,7 +115,6 @@ def handle_exception(e):
     return render_page('error.html', code=e.code, **kwargs)
 
 @app.errorhandler(413)
-@limiter.exempt
 def entity_too_large(e):
     """Error page if uploaded file is too large"""
     kwargs = {
@@ -142,6 +140,7 @@ def api_get_dcapp_video():
 
 
 @app.route('/upload', methods=['POST'])
+@limiter.limit("30/minute, 1/second")
 def upload():
     # remove old requests from cache
     cached_req_session.cache.remove_old_entries(datetime.now() - req_expire_after)
@@ -162,7 +161,6 @@ def upload():
 
 
 @app.route('/')
-@limiter.exempt
 def root():
     # remove old requests from cache
     cached_req_session.cache.remove_old_entries(datetime.now() - req_expire_after)
@@ -171,13 +169,13 @@ def root():
 
 
 @app.route('/link')
+@limiter.limit("30/minute, 1/second")
 def link():
     url = request.args.get('url')
     return find_and_render('url', url)
 
 
 @app.route('/twitter_users')
-@limiter.exempt
 def twitter_users():
     """Show list of indexed twitter users"""
     conn = sqlite3.connect('live/twitter_scraper.db')
