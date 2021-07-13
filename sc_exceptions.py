@@ -68,6 +68,11 @@ class TWError(SCError):
     def __str__(self):
         return f"A matching image was found but the tweet no longer exists ({self.message})"
 
+class TWRateError(SCError):
+
+    def __str__(self):
+        return "Sourcecatcher reached the Twitter API rate limit, try again later"
+
 class VideoDownloadError(SCError):
 
     def __str__():

@@ -10,7 +10,7 @@ import joblib
 import time
 
 
-def image_detect_and_compute(img_name, location='file', content=None):
+def image_detect_and_compute(img_name, location='file'):
     """Detect and compute interest points and their descriptors."""
     detector = cv2.ORB_create()
     computer = cv2.xfeatures2d.FREAK_create()
@@ -19,10 +19,7 @@ def image_detect_and_compute(img_name, location='file', content=None):
     if location == 'file':
         img = cv2.imread(img_name)
     elif location == 'url':
-        if content is None:
-            content = np.asarray(download_content(img_name))
-        else:
-            content = np.asarray(content)
+        content = np.asarray(download_content(img_name))
         img = cv2.imdecode(content, cv2.IMREAD_UNCHANGED)
 
     # compute descriptors
@@ -40,7 +37,7 @@ def image_detect_and_compute(img_name, location='file', content=None):
     return hist
     
 
-def find_similar(img_path, location='file', content=None):
+def find_similar(img_path, location='file'):
     print(img_path)
     global kmeans
 
@@ -57,7 +54,7 @@ def find_similar(img_path, location='file', content=None):
     # compute histogram
     start_time = time.time()
     try:
-        hist = image_detect_and_compute(img_path, location=location, content=content)
+        hist = image_detect_and_compute(img_path, location=location)
     except cv2.error:
         return []
 

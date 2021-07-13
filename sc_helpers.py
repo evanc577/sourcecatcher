@@ -30,7 +30,7 @@ def stats():
     c.execute('SELECT MAX(_ROWID_) FROM tweet_text LIMIT 1')
     num_tweets = c.fetchone()[0]
 
-    mtime = datetime.utcfromtimestamp(os.path.getmtime('live/phash_index.ann'))
+    mtime = datetime.utcfromtimestamp(os.path.getmtime('live/twitter_scraper.db'))
     now = datetime.utcnow()
     time_diff = secs_to_str((now - mtime).seconds)
 

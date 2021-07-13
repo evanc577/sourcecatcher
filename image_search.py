@@ -1,12 +1,12 @@
+from cachetools import cached, LRUCache
+from cachetools.keys import hashkey
 from datetime import timedelta, datetime
 from find_match import find
 from find_similar import find_similar
-from flask import render_template
 from sc_exceptions import *
-from sc_helpers import render_page
+import hashlib
 import os
 import re
-import requests
 import requests_cache
 import sqlite3
 import sys
@@ -57,8 +57,18 @@ tweepy_kwargs = {
 req_expire_after = timedelta(seconds=600)
 cached_req_session = requests_cache.CachedSession('sc_cache', backend='sqlite', expire_after=req_expire_after)
 
+# image search cache
+image_search_cache = LRUCache(maxsize=128)
+def image_search_key(location, path):
+    if location == "file":
+        with open(path, "rb") as f:
+            bytes = f.read() # read entire file as bytes
+            return hashlib.sha256(bytes).hexdigest()
+    return hashkey(path)
 
-def image_search(location, path, content=None):
+
+@cached(cache=image_search_cache, key=image_search_key)
+def image_search(location, path):
     tweet_ids = []
     tweets = []
     warning_msg = None
@@ -66,7 +76,7 @@ def image_search(location, path, content=None):
     count = 0
 
     # try phash search first
-    found = find(location, path, content=content)
+    found = find(location, path)
     for score, tweet_id, basename in found:
         if tweet_id in id_score:
             continue
@@ -80,7 +90,7 @@ def image_search(location, path, content=None):
     # try content-based search if no matches are found
     if count == 0:
         try:
-            found = find_similar(path, location=location, content=content)
+            found = find_similar(path, location=location)
             count = 0
             for score, tweet_id, basename in found:
                 if tweet_id in id_score:
@@ -122,12 +132,7 @@ def image_search(location, path, content=None):
             except KeyError:
                 pass
     except tweepy.RateLimitError as e:
-        for tweet_id in tweet_ids:
-            tweets.append(get_embed(tweet_id))
-            try:
-                todo_ids.remove(str(lookedup_tweet['id']))
-            except KeyError:
-                pass
+        raise TWRateError
 
     # add tweets that have been removed
     for tweet_id in todo_ids:
@@ -161,7 +166,7 @@ def image_search(location, path, content=None):
     if location == 'url':
         kwargs['url'] = path
 
-    return render_page('match_results.html', **kwargs)
+    return kwargs
 
 def priority(user):
     """
@@ -195,7 +200,6 @@ def get_saved_tweet(tweet_id, score):
     _, text = c.fetchone()
     tweet['text_html'] = re.sub(r"https://t\.co/\w+$", "", text)
 
-    images = []
     c.execute('SELECT * FROM info where id=(?)', (tweet_id,))
     info = c.fetchone()
     tweet['screen_name'] = info[2]
@@ -240,17 +244,17 @@ def get_custom_embed(lookedup_tweet, score):
 
     return tweet
 
-def get_embed(tweet_id):
-    """get html for an embedded tweet"""
-    tweet = {}
-    tweet['custom'] = False
-    tweet_source = 'https://www.twitter.com/a/status/{}'.format(tweet_id)
-    url = urllib.parse.quote(tweet_source, safe='')
-    get_url = 'https://publish.twitter.com/oembed?url={}'.format(url)
+#  def get_embed(tweet_id):
+    #  """get html for an embedded tweet"""
+    #  tweet = {}
+    #  tweet['custom'] = False
+    #  tweet_source = 'https://www.twitter.com/a/status/{}'.format(tweet_id)
+    #  url = urllib.parse.quote(tweet_source, safe='')
+    #  get_url = 'https://publish.twitter.com/oembed?url={}'.format(url)
 
-    r = cached_req_session.get(url=get_url, timeout=30)
-    tweet['embed_tweet'] = r.json()['html']
-    return tweet
+    #  r = cached_req_session.get(url=get_url, timeout=30)
+    #  tweet['embed_tweet'] = r.json()['html']
+    #  return tweet
 
 def calc_score_percent(score):
     """calculate the percentage score, where 100 is best and 0 is worst"""

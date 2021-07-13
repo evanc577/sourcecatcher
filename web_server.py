@@ -1,21 +1,16 @@
-from bs4 import BeautifulSoup
 from datetime import timedelta, datetime
 from dcapp import dc_app, get_video_link
-from find_match import find
-from find_similar import find_similar
-from flask import Flask, flash, redirect, render_template, request, session, abort, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from image_search import image_search
+from image_search import image_search, image_search_cache
 from sc_exceptions import *
-from sc_helpers import download_content
 from sc_helpers import render_page
 from werkzeug.exceptions import HTTPException
-from werkzeug.utils import secure_filename
 import hashlib
 import os
 import random
-import requests
+import redis
 import requests_cache
 import sqlite3
 import sys
@@ -38,6 +33,8 @@ app.config['VIDEOS_FOLDER'] = VIDEOS_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
+
+redis_db = redis.Redis(host='localhost', port=6379, db=0)
 
 def urlescape(url):
     return urllib.parse.quote(url, safe='')
@@ -209,7 +206,6 @@ def twitter_users():
 
 def find_and_render(location, path):
     """Try to find a matching image and render the results webpage"""
-    content = None
     error_msg = None
     error_reasons = None
     error_link = None
@@ -217,6 +213,7 @@ def find_and_render(location, path):
     code = 200
 
     try:
+        # return error if url is for DC app
         if location == 'url':
             extract = tldextract.extract(path)
             if extract.subdomain == 'dreamcatcher' and \
@@ -225,7 +222,17 @@ def find_and_render(location, path):
                 raise SCError('DC App has closed and is no longer supported')
                 #  return dc_app(path)
 
-        return image_search(location, path, content=content)
+        # clear image_search() lru cache if database was updated
+        db_mtime = os.path.getmtime('live/twitter_scraper.db')
+        if redis_db.get("db_mtime") != bytes(str(db_mtime), "utf-8"):
+            print("clearing image_search() cache")
+            image_search_cache.clear()
+        redis_db.set("db_mtime", str(db_mtime))
+
+        # find matching results
+        ret_kwargs = image_search(location, path)
+
+        return render_page('match_results.html', **ret_kwargs)
 
     except TWError as e:
         error_msg = str(e)
