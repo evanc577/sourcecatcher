@@ -222,16 +222,10 @@ def find_and_render(location, path):
             if extract.subdomain == 'dreamcatcher' and \
                     extract.domain == 'candlemystar' and \
                     extract.suffix == 'com':
-                raise SCError('DC App has closed is no longer supported')
+                raise SCError('DC App has closed and is no longer supported')
                 #  return dc_app(path)
-            else:
-                content = download_content(path)
-                found = find('url', path, content=content)
 
-        elif location == 'file':
-            found = find('file', path)
-
-        return image_search(location, path, found, content=content)
+        return image_search(location, path, content=content)
 
     except TWError as e:
         error_msg = str(e)

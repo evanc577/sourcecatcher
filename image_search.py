@@ -58,15 +58,16 @@ req_expire_after = timedelta(seconds=600)
 cached_req_session = requests_cache.CachedSession('sc_cache', backend='sqlite', expire_after=req_expire_after)
 
 
-def image_search(location, path, found, content=None):
+def image_search(location, path, content=None):
     tweet_ids = []
     tweets = []
     warning_msg = None
-
     id_score = {}
     count = 0
-    for candidate in found:
-        score, tweet_id, basename = candidate
+
+    # try phash search first
+    found = find(location, path, content=content)
+    for score, tweet_id, basename in found:
         if tweet_id in id_score:
             continue
 
@@ -76,16 +77,12 @@ def image_search(location, path, found, content=None):
         id_score[tweet_id] = score_percent
         count += 1
 
+    # try content-based search if no matches are found
     if count == 0:
-        # try content-based search if no matches are found
         try:
-            if location == 'url':
-                found = find_similar(path, location='url', content=content)
-            elif location == 'file':
-                found = find_similar(path, location='file')
+            found = find_similar(path, location=location, content=content)
             count = 0
-            for candidate in found:
-                score, tweet_id, basename = candidate
+            for score, tweet_id, basename in found:
                 if tweet_id in id_score:
                     continue
 
@@ -99,61 +96,61 @@ def image_search(location, path, found, content=None):
             else:
                 raise e
 
-        if count == 0:
-            raise NoMatchesFound
-        else:
+        # set warning message if tweets are found with content-based search
+        if count != 0:
             warning_msg = "No exact matches found<br /><strong>Experimental:</strong> Showing close matches"
 
-    if len(tweet_ids) != 0:
-        tweepy_kwargs = {
-                'tweet_mode': 'extended',
-                }
+    # show error if no results are found
+    if count == 0:
+        raise NoMatchesFound
 
-        todo_ids = set()
+    # create tweet cards
+    tweepy_kwargs = {
+        'tweet_mode': 'extended',
+    }
+    todo_ids = set()
+    for tweet_id in tweet_ids:
+        todo_ids.add(tweet_id.strip())
+    try:
+        lookedup_tweets = api.statuses_lookup(tweet_ids, **tweepy_kwargs)
+        for lookedup_tweet in lookedup_tweets:
+            lookedup_tweet = lookedup_tweet._json
+            score = id_score[lookedup_tweet['id']]
+            tweets.append(get_custom_embed(lookedup_tweet, score))
+            try:
+                todo_ids.remove(str(lookedup_tweet['id']))
+            except KeyError:
+                pass
+    except tweepy.RateLimitError as e:
         for tweet_id in tweet_ids:
-            todo_ids.add(tweet_id.strip())
+            tweets.append(get_embed(tweet_id))
+            try:
+                todo_ids.remove(str(lookedup_tweet['id']))
+            except KeyError:
+                pass
 
-        # create tweet cards
-        try:
-            lookedup_tweets = api.statuses_lookup(tweet_ids, **tweepy_kwargs)
-            for lookedup_tweet in lookedup_tweets:
-                lookedup_tweet = lookedup_tweet._json
-                score = id_score[lookedup_tweet['id']]
-                tweets.append(get_custom_embed(lookedup_tweet, score))
-                try:
-                    todo_ids.remove(str(lookedup_tweet['id']))
-                except KeyError:
-                    pass
-        except tweepy.RateLimitError as e:
-            for tweet_id in tweet_ids:
-                tweets.append(get_embed(tweet_id))
-                try:
-                    todo_ids.remove(str(lookedup_tweet['id']))
-                except KeyError:
-                    pass
+    # add tweets that have been removed
+    for tweet_id in todo_ids:
+        tweets.append(get_saved_tweet(tweet_id, id_score[int(tweet_id)]))
 
-        # add tweets that have been removed
-        for tweet_id in todo_ids:
-            tweets.append(get_saved_tweet(tweet_id, id_score[int(tweet_id)]))
-
-        # limit each twitter user to 3 tweets
-        user_count = {}
-        temp = []
-        for tweet in tweets:
-            if tweet['screen_name'].casefold() not in user_count:
-                user_count[tweet['screen_name'].casefold()] = 0
-            if user_count[tweet['screen_name'].casefold()] >= 3:
-                continue
-            user_count[tweet['screen_name'].casefold()] += 1
-            temp.append(tweet)
-        tweets = temp
-
-        # sort tweets by score then by id (date)
-        tweets.sort(key=lambda tweet: (priority(tweet['screen_name']), -min(90, tweet['score']), tweet['tweet_id']))
+    # limit each twitter user to 3 tweets
+    user_count = {}
+    temp = []
+    for tweet in tweets:
+        if tweet['screen_name'].casefold() not in user_count:
+            user_count[tweet['screen_name'].casefold()] = 0
+        if user_count[tweet['screen_name'].casefold()] >= 3:
+            continue
+        user_count[tweet['screen_name'].casefold()] += 1
+        temp.append(tweet)
+    tweets = temp
 
     # show error if no tweets are found
     if len(tweets) == 0:
         raise NoMatchesFound
+
+    # sort tweets by score then by id (date)
+    tweets.sort(key=lambda tweet: (priority(tweet['screen_name']), -min(90, tweet['score']), tweet['tweet_id']))
 
     kwargs = {
             'tweets': tweets,
