@@ -14,7 +14,7 @@ tldextract
 scikit-learn==0.22.2.post1
 opencv-python
 opencv-contrib-python
-joblib==0.15.1
+joblib==1.2.0
 requests-cache==0.5.2
 redis==3.5.2
 youtube_dl
