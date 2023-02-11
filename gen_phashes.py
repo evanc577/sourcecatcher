@@ -36,16 +36,6 @@ def gen_phash():
     except IOError:
         print("error loading config file")
         sys.exit(1)
-    try:
-        access_token = config['access_token']
-        access_secret = config['access_secret']
-        consumer_key = config['consumer_key']
-        consumer_secret = config['consumer_secret']
-        users = config['users']
-        media_dir = config['media_dir']
-    except KeyError:
-        print("could not parse users file")
-        sys.exit(1)
 
     index = AnnoyIndex(64, metric='hamming')
 

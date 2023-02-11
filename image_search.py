@@ -22,14 +22,6 @@ except IOError:
     print("error loading config file")
     sys.exit(1)
 try:
-    access_token = config['access_token']
-    access_secret = config['access_secret']
-    consumer_key = config['consumer_key']
-    consumer_secret = config['consumer_secret']
-except KeyError:
-    print("could not parse config file")
-    sys.exit(1)
-try:
     temp = config['priority_users']
     num_prio_users = len(temp)
     priority_users = {}
@@ -175,6 +167,7 @@ def get_saved_tweet(tweet_id, score):
 
     # Add images
     tweet["images"] = [f"https://pbs.twimg.com/media/{x[0]}" for x in info]
+    tweet["num_media"] = len(info)
 
     return tweet
 

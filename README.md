@@ -34,11 +34,6 @@ pip install -r requirements.txt
 You will need to apply for the Twitter api and create an app.
 
 ```yaml
-access_token: "your twitter api access token"
-access_secret: "your twitter api access secret"
-consumer_key: "your twitter api consumer key"
-consumer_secret: "your twitter api consumer secret"
-
 media_dir: "path/to/directory/to/store/images"
 
 users:
