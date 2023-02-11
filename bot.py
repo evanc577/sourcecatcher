@@ -195,3 +195,8 @@ if __name__ == "__main__":
             except sqlite3.IntegrityError:
                 c.execute('UPDATE users SET last_id=(?) WHERE user=(?)', (last_id ,user))
             conn.commit()
+
+        process.wait(10)
+        if process.returncode != 0:
+            print(f"tweet-scraper non-zero exit code: {process.returncode}")
+            sys.exit(1)
