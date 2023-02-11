@@ -10,8 +10,6 @@ import re
 import requests_cache
 import sqlite3
 import sys
-import tweepy
-import urllib
 import yaml
 
 # parse config.yaml
@@ -37,21 +35,9 @@ try:
     priority_users = {}
     for i in range(num_prio_users):
         priority_users[temp[i].casefold()] = i
-
-except KeyError:
+except (KeyError, TypeError):
     num_prio_users = 0
     priority_users = {}
-
-# set up tweepy
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_secret)
-api = tweepy.API(auth)
-tweepy_kwargs = {
-        'compression': False,
-        'tweet_mode': 'extended',
-        'trim_user': False,
-        'include_entities': True,
-        }
 
 # cache http requests
 req_expire_after = timedelta(seconds=600)
@@ -114,28 +100,8 @@ def image_search(location, path):
     if count == 0:
         raise NoMatchesFound
 
-    # create tweet cards
-    tweepy_kwargs = {
-        'tweet_mode': 'extended',
-    }
-    todo_ids = set()
-    for tweet_id in tweet_ids:
-        todo_ids.add(tweet_id.strip())
-    try:
-        lookedup_tweets = api.statuses_lookup(tweet_ids, **tweepy_kwargs)
-        for lookedup_tweet in lookedup_tweets:
-            lookedup_tweet = lookedup_tweet._json
-            score = id_score[lookedup_tweet['id']]
-            tweets.append(get_custom_embed(lookedup_tweet, score))
-            try:
-                todo_ids.remove(str(lookedup_tweet['id']))
-            except KeyError:
-                pass
-    except tweepy.RateLimitError as e:
-        raise TWRateError
-
     # add tweets that have been removed
-    for tweet_id in todo_ids:
+    for tweet_id in tweet_ids:
         tweets.append(get_saved_tweet(tweet_id, id_score[int(tweet_id)]))
 
     # limit each twitter user to 3 tweets
@@ -188,7 +154,7 @@ def get_saved_tweet(tweet_id, score):
 
     tweet = {}
     tweet['custom'] = True
-    tweet['is_backup'] = True
+    tweet['is_backup'] = False
     tweet['score'] = score
     tweet['tweet_id'] = int(tweet_id)
 
@@ -196,65 +162,21 @@ def get_saved_tweet(tweet_id, score):
     ts = id2ts(tweet_id)
     tweet['ts'] = datetime.utcfromtimestamp(ts).isoformat() + "+00:00"
 
+    # Set text
     c.execute('SELECT * FROM tweet_text where id=(?)', (tweet_id,))
     _, text = c.fetchone()
     tweet['text_html'] = re.sub(r"https://t\.co/\w+$", "", text)
 
     c.execute('SELECT * FROM info where id=(?)', (tweet_id,))
-    info = c.fetchone()
-    tweet['screen_name'] = info[2]
+    info = [x for x in c.fetchall()]
+
+    # Set screen_name
+    tweet['screen_name'] = info[0][2]
+
+    # Add images
+    tweet["images"] = [f"https://pbs.twimg.com/media/{x[0]}" for x in info]
 
     return tweet
-
-
-def get_custom_embed(lookedup_tweet, score):
-    """
-    Create a custom embedded tweet
-    """
-
-    tweet = {}
-    tweet['custom'] = True
-    tweet['tweet_id'] = lookedup_tweet['id']
-    tweet['score'] = score
-
-    # process tweet text
-    display_range = lookedup_tweet['display_text_range']
-    tweet['text_html'] = lookedup_tweet['full_text'][display_range[0]:display_range[1]]
-
-    # process name
-    tweet['screen_name'] = lookedup_tweet['user']['screen_name']
-    tweet['identity_name'] = lookedup_tweet['user']['name']
-    tweet['profile_image'] = lookedup_tweet['user']['profile_image_url_https']
-
-    # process time
-    tweet['ts'] = lookedup_tweet['created_at']
-
-    # process tweet images
-    try:
-        media = lookedup_tweet['extended_entities']['media']
-    except KeyError:
-        # use placeholder if media is protected
-        media = [{'media_url_https': '/static/placeholder.png'}]
-
-    tweet['num_media'] = len(media)
-    images = []
-    for m in media:
-        images.append(m['media_url_https'])
-    tweet['images'] = images
-
-    return tweet
-
-#  def get_embed(tweet_id):
-    #  """get html for an embedded tweet"""
-    #  tweet = {}
-    #  tweet['custom'] = False
-    #  tweet_source = 'https://www.twitter.com/a/status/{}'.format(tweet_id)
-    #  url = urllib.parse.quote(tweet_source, safe='')
-    #  get_url = 'https://publish.twitter.com/oembed?url={}'.format(url)
-
-    #  r = cached_req_session.get(url=get_url, timeout=30)
-    #  tweet['embed_tweet'] = r.json()['html']
-    #  return tweet
 
 def calc_score_percent(score):
     """calculate the percentage score, where 100 is best and 0 is worst"""

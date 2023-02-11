@@ -1,22 +1,17 @@
-from multiprocessing.pool import ThreadPool
-from threading import Lock
-import os
-import numpy as np
-import os
-import pprint
-import sqlite3
-import sys
-import tweepy
-import yaml
 from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz
+from multiprocessing.pool import ThreadPool
+from PIL import Image
+from threading import Lock
+import json
+import os
+import piexif
 import requests
 import shutil
-import piexif
-from PIL import Image
-import io
-from itertools import islice
-import time
+import sqlite3
+import subprocess
+import sys
+import yaml
 
 def mkdir(time_str):
     """create a directory for a given time
@@ -105,7 +100,7 @@ def download_tweet_media(tweet):
                 with lock:
                     try:
                         c.execute('INSERT INTO info VALUES (?,?,?,?)',
-                                (filename, path, tweet['user']['screen_name'], tweet['id']))
+                                (filename, path, tweet['user']['screen_name'], tweet['id_str']))
                     except sqlite3.IntegrityError:
                         pass
 
@@ -116,12 +111,12 @@ def download_tweet_media(tweet):
             text_field = 'text'
 
         with lock:
-            c.execute('INSERT INTO tweet_text VALUES (?,?)', (tweet['id'], tweet[text_field]))
+            c.execute('INSERT INTO tweet_text VALUES (?,?)', (tweet['id_str'], tweet[text_field]))
 
         # add hashtags
         with lock:
             for hashtag in tweet['entities']['hashtags']:
-                c.execute('INSERT INTO hashtags VALUES (?,?)', (hashtag['text'], tweet['id']))
+                c.execute('INSERT INTO hashtags VALUES (?,?)', (hashtag['text'], tweet['id_str']))
     except sqlite3.IntegrityError:
         pass
 
@@ -129,7 +124,6 @@ def download_tweet_media(tweet):
         conn.commit()
 
 def download_tweet(tweet):
-
     # skip if tweet is actually a retweet
     if 'retweeted_status' in tweet:
         return tweet
@@ -140,8 +134,6 @@ def download_tweet(tweet):
     return tweet
 
 if __name__ == "__main__":
-    pp = pprint.PrettyPrinter()
-
     # parse config.yaml
     try:
         dirpath = os.path.dirname(os.path.realpath(__file__))
@@ -162,60 +154,18 @@ if __name__ == "__main__":
         print("could not parse users file")
         sys.exit(1)
 
-
     lock = Lock()
-
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_token, access_secret)
-
-    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
-
 
     conn = sqlite3.connect('working/twitter_scraper.db', check_same_thread=False)
     c = conn.cursor()
     with lock:
         c.execute('CREATE TABLE IF NOT EXISTS users (user text, last_id int64, UNIQUE (user))')
         c.execute('CREATE TABLE IF NOT EXISTS info (filename text, path text, user text, id int64, UNIQUE (filename, path))')
+        c.execute('CREATE INDEX IF NOT EXISTS id ON info(id)')
         c.execute('CREATE TABLE IF NOT EXISTS tweet_text (id int64, text text, UNIQUE (id))')
         c.execute('CREATE TABLE IF NOT EXISTS hashtags (hashtag text, id int64, UNIQUE (hashtag, id))')
         c.execute('CREATE TABLE IF NOT EXISTS deleted_users (user text, UNIQUE (user))')
 
-    count = 0
-
-    # add individual tweets to database
-    n = 100 # number of ids per statuses_lookup api call, 100 max
-    tweepy_kwargs = {
-            'tweet_mode': 'extended',
-            }
-    try:
-        with open('add_tweets.txt', 'r') as f:
-            new_tweets = False
-            while True:
-                ids = [x.strip() for x in islice(f, n)]
-                if not ids:
-                    break
-                new_tweets = True
-                tweets = api.statuses_lookup(ids, **tweepy_kwargs)
-                tweets = [t._json for t in tweets]
-                with ThreadPool(16) as pool:
-                    for r in pool.imap(download_tweet_media, tweets):
-                        pass
-                    #  for tweet in tweets:
-                        #  # download tweet media
-                        #  download_tweet_media(tweet)
-            if new_tweets:
-                os.rename('add_tweets.txt', f'add_tweets.txt.{str(int(time.time()))}' )
-    except FileNotFoundError:
-        pass
-
-    # download linked media for all users
-    tweepy_kwargs = {
-            'compression': False,
-            'tweet_mode': 'extended',
-            'count': 200,
-            'exclude_replies': False,
-            'include_rts': True,
-            }
     for user in users:
         print('Checking {} for new tweets'.format(user))
         user = user.lower()
@@ -224,64 +174,24 @@ if __name__ == "__main__":
             c.execute('SELECT last_id FROM users WHERE user=?', (user,))
         last_id = c.fetchone()
         first_id = None
+
+        # Call tweet-scraper
+        process_args: list[str] = ["tweet-scraper", f"from:{user} filter:images"]
         if last_id is not None:
-            first_scan = False
             last_id = last_id[0]
+            process_args.extend(["--min-id", str(last_id + 1)])
         else:
-            first_scan = True
+            last_id = 0
+        process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
 
-        # fetch tweets
-        try:
-            if first_scan:
-                tweets = api.user_timeline(user, **tweepy_kwargs)
-            else:
-                tweets = api.user_timeline(user, since_id=last_id+1, **tweepy_kwargs)
+        with ThreadPool(20) as pool:
+            for tweet in pool.imap(download_tweet, map(json.loads, process.stdout)):
+                assert str(tweet["id"]) == tweet["id_str"]
+                last_id = max(last_id, int(tweet["id_str"]))
+        # update last tweet read
+        with lock:
             try:
-                with lock:
-                    c.execute('DELETE FROM deleted_users WHERE user=(?)', (user,))
-                    conn.commit()
-            except:
-                pass
-        except tweepy.error.TweepError as e:
-            print("tweepy error {}".format(e))
-
-            # 4XX response status code
-            if e.response.status_code // 10 == 40:
-                try:
-                    with lock:
-                        c.execute('INSERT INTO deleted_users VALUES (?)', (user,))
-                        conn.commit()
-                except:
-                    pass
-            continue
-
-
-        num_tweets = len(tweets)
-        while num_tweets > 0:
-            tweets = [t._json for t in tweets]
-            with ThreadPool(20) as pool:
-                for tweet in pool.imap(download_tweet, tweets):
-                    # update last tweet read
-                    if last_id is None or tweet['id'] > last_id:
-                        with lock:
-                            try:
-                                c.execute('INSERT INTO users VALUES (?,?)', (user, tweet['id']))
-                            except sqlite3.IntegrityError:
-                                c.execute('UPDATE users SET last_id=(?) WHERE user=(?)', (tweet['id'], user))
-                            conn.commit()
-                        last_id = tweet['id']
-
-                    # update first tweet read
-                    if first_id is None or tweet['id'] < first_id:
-                        first_id = tweet['id']
-
-            # fetch more tweets if available
-            try:
-                if first_scan:
-                    tweets = api.user_timeline(user, max_id=first_id-1, **tweepy_kwargs)
-                else:
-                    tweets = api.user_timeline(user, since_id=last_id+1, **tweepy_kwargs)
-            except tweepy.error.TweepError as e:
-                print("tweepy error {}".format(e))
-                continue
-            num_tweets = len(tweets)
+                c.execute('INSERT INTO users VALUES (?,?)', (user, last_id))
+            except sqlite3.IntegrityError:
+                c.execute('UPDATE users SET last_id=(?) WHERE user=(?)', (last_id ,user))
+            conn.commit()
