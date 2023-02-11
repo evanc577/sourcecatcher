@@ -8,9 +8,8 @@ from sc_exceptions import *
 
 def render_page(template, code=200, **kwargs):
     """Get stats and render template"""
-    num_photos, num_tweets, mtime = stats()
+    num_photos, mtime = stats()
     kwargs['num_photos'] = num_photos
-    kwargs['num_tweets'] = num_tweets
     kwargs['mtime'] = mtime
 
     resp = make_response(render_template(template, **kwargs), code)
@@ -22,20 +21,15 @@ def stats():
     conn = sqlite3.connect('live/twitter_scraper.db')
     c = conn.cursor()
 
-    # c.execute('SELECT COUNT() FROM info')
     c.execute('SELECT MAX(_ROWID_) FROM info LIMIT 1')
     num_photos = c.fetchone()[0]
-
-    # c.execute('SELECT COUNT() FROM tweet_text')
-    c.execute('SELECT MAX(_ROWID_) FROM tweet_text LIMIT 1')
-    num_tweets = c.fetchone()[0]
 
     mtime = datetime.utcfromtimestamp(os.path.getmtime('live/twitter_scraper.db'))
     now = datetime.utcnow()
     time_diff = secs_to_str((now - mtime).seconds)
 
     conn.close()
-    return num_photos, num_tweets, time_diff
+    return num_photos, time_diff
 
 
 def secs_to_str(secs):
