@@ -172,7 +172,7 @@ if __name__ == "__main__":
         first_id = None
 
         # Set up tweet-scraper arguments
-        process_args: list[str] = ["tweet-scraper", f"from:{user} filter:images"]
+        process_args = ["tweet-scraper", f"from:{user} filter:images"]
         if last_id is not None:
             last_id = last_id[0]
             # Set min-id arg if we have seen this user before
@@ -185,7 +185,7 @@ if __name__ == "__main__":
             process_args.append("--save-headers")
         else:
             process_args.append("--load-headers")
-        HEADER_PERSIST_FILE: str = "persisted_headers.txt"
+        HEADER_PERSIST_FILE = "persisted_headers.txt"
         process_args.append(HEADER_PERSIST_FILE)
 
         # Call tweet-scraper
