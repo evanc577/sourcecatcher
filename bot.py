@@ -162,7 +162,7 @@ if __name__ == "__main__":
         c.execute('CREATE TABLE IF NOT EXISTS hashtags (hashtag text, id int64, UNIQUE (hashtag, id))')
         c.execute('CREATE TABLE IF NOT EXISTS deleted_users (user text, UNIQUE (user))')
 
-    for user in users:
+    for i, user in enumerate(users):
         print('Checking {} for new tweets'.format(user))
         user = user.lower()
         # find the last read tweet
@@ -171,19 +171,33 @@ if __name__ == "__main__":
         last_id = c.fetchone()
         first_id = None
 
-        # Call tweet-scraper
+        # Set up tweet-scraper arguments
         process_args: list[str] = ["tweet-scraper", f"from:{user} filter:images"]
         if last_id is not None:
             last_id = last_id[0]
+            # Set min-id arg if we have seen this user before
             process_args.extend(["--min-id", str(last_id + 1)])
         else:
             last_id = 0
-        process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
 
+        # Set args for header persistence
+        if i % 50 == 0:
+            process_args.append("--save-headers")
+        else:
+            process_args.append("--load-headers")
+        HEADER_PERSIST_FILE: str = "persisted_headers.txt"
+        process_args.append(HEADER_PERSIST_FILE)
+
+        # Call tweet-scraper
+        process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
+        assert process.stdout is not None
+
+        # Download and process tweets
         with ThreadPool(20) as pool:
             for tweet in pool.imap(download_tweet, map(json.loads, process.stdout)):
                 assert str(tweet["id"]) == tweet["id_str"]
                 last_id = max(last_id, int(tweet["id_str"]))
+
         # update last tweet read
         with lock:
             try:
@@ -192,6 +206,7 @@ if __name__ == "__main__":
                 c.execute('UPDATE users SET last_id=(?) WHERE user=(?)', (last_id ,user))
             conn.commit()
 
+        # Prune tweet-scraper process
         process.wait(10)
         if process.returncode != 0:
             print(f"tweet-scraper non-zero exit code: {process.returncode}")
