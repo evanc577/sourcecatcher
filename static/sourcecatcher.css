@@ -372,6 +372,13 @@ a:hover {
   margin: 0 auto;
 }
 
+.news {
+  font-size: 1em;
+  max-width: 600px;
+  text-align: justify;
+  margin: 0 auto;
+}
+
 .inputs {
   max-width: 600px;
   margin: 2em auto;

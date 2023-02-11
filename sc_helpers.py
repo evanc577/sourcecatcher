@@ -1,9 +1,10 @@
-from flask import render_template, make_response
 from datetime import datetime
-import sqlite3
+from flask import render_template, make_response
+from sc_exceptions import *
 import os
 import requests
-from sc_exceptions import *
+import sqlite3
+import yaml
 
 
 def render_page(template, code=200, **kwargs):
@@ -11,9 +12,27 @@ def render_page(template, code=200, **kwargs):
     num_photos, mtime = stats()
     kwargs['num_photos'] = num_photos
     kwargs['mtime'] = mtime
+    news = get_news()
+    if news is not None:
+        kwargs["news"] = news
 
     resp = make_response(render_template(template, **kwargs), code)
     return resp
+
+
+def get_news():
+    try:
+        dirpath = os.path.dirname(os.path.realpath(__file__))
+        path = os.path.join(dirpath, 'config.yaml')
+        with open(path) as f:
+            config = yaml.safe_load(f)
+    except IOError:
+        return None
+
+    try:
+        return config["news"]
+    except KeyError:
+        return None
 
 
 def stats():
