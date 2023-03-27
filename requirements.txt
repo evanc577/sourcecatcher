@@ -16,7 +16,7 @@ opencv-python
 opencv-contrib-python
 joblib==0.15.1
 requests-cache==0.5.2
-redis==3.5.2
+redis==4.5.3
 youtube_dl
 bsddb3==6.2.7
 cachetools==4.2.2
