@@ -74,35 +74,31 @@ def write_exif_date(path, filename, date):
 
 def download_tweet_media(tweet):
     """try to download images linked in tweet"""
-    if 'extended_entities' in tweet and 'media' in tweet['extended_entities']:
-        for media in tweet['extended_entities']['media']:
-            print('{}/{}:'.format(tweet['user']['screen_name'], tweet['id_str']))
-            if 'video_info' in media:
+    for image in tweet["images"]:
+        print('{}/{}:'.format(tweet['user']['screen_name'], tweet['id_str']))
+        # tweet contains pictures
+        path, date = mkdir(tweet['created_at'])
+        filename = download_media(image, path)
+        if filename is None:
+            return
+        try:
+            write_exif_date(path, filename, date)
+        except OSError:
+            try:
+                os.remove(os.path.join(path, filename))
+            except:
+                pass
+            filename = download_media(image, path)
+            if filename is None:
                 return
-            else:
-                # tweet contains pictures
-                path, date = mkdir(tweet['created_at'])
-                filename = download_media(media['media_url_https'], path)
-                if filename is None:
-                    return
-                try:
-                    write_exif_date(path, filename, date)
-                except OSError:
-                    try:
-                        os.remove(os.path.join(path, filename))
-                    except:
-                        pass
-                    filename = download_media(media['media_url_https'], path)
-                    if filename is None:
-                        return
 
-                # add info
-                with lock:
-                    try:
-                        c.execute('INSERT INTO info VALUES (?,?,?,?)',
-                                (filename, path, tweet['user']['screen_name'], tweet['id_str']))
-                    except sqlite3.IntegrityError:
-                        pass
+        # add info
+        with lock:
+            try:
+                c.execute('INSERT INTO info VALUES (?,?,?,?)',
+                        (filename, path, tweet['user']['screen_name'], tweet['id_str']))
+            except sqlite3.IntegrityError:
+                pass
 
     try:
         if 'full_text' in tweet:
@@ -114,9 +110,9 @@ def download_tweet_media(tweet):
             c.execute('INSERT INTO tweet_text VALUES (?,?)', (tweet['id_str'], tweet[text_field]))
 
         # add hashtags
-        with lock:
-            for hashtag in tweet['entities']['hashtags']:
-                c.execute('INSERT INTO hashtags VALUES (?,?)', (hashtag['text'], tweet['id_str']))
+        # with lock:
+        #     for hashtag in tweet['entities']['hashtags']:
+        #         c.execute('INSERT INTO hashtags VALUES (?,?)', (hashtag['text'], tweet['id_str']))
     except sqlite3.IntegrityError:
         pass
 
@@ -125,7 +121,7 @@ def download_tweet_media(tweet):
 
 def download_tweet(tweet):
     # skip if tweet is actually a retweet
-    if 'retweeted_status' in tweet:
+    if tweet["retweet"]:
         return tweet
 
     # download tweet media
@@ -143,12 +139,10 @@ if __name__ == "__main__":
     except IOError:
         print("error loading config file")
         sys.exit(1)
-    try:
-        users = config['users']
-        media_dir = config['media_dir']
-    except KeyError:
-        print("could not parse users file")
-        sys.exit(1)
+
+    users = config['users']
+    media_dir = config['media_dir']
+    nitter_instance = config["nitter_instance"]
 
     lock = Lock()
 
@@ -172,23 +166,15 @@ if __name__ == "__main__":
         first_id = None
 
         # Set up tweet-scraper arguments
-        process_args = ["tweet-scraper", f"from:{user} filter:images"]
+        process_args = ["nitter-scraper", nitter_instance, "--skip-retweets", "--reorder-pinned" ]
         if last_id is not None:
             last_id = last_id[0]
             # Set min-id arg if we have seen this user before
             process_args.extend(["--min-id", str(last_id + 1)])
         else:
             last_id = 0
+        process_args.extend([ f"user-with-replies", user ])
 
-        # Set args for header persistence
-        if i % 50 == 0:
-            process_args.append("--save-headers")
-        else:
-            process_args.append("--load-headers")
-        HEADER_PERSIST_FILE = "persisted_headers.txt"
-        process_args.append(HEADER_PERSIST_FILE)
-
-        # Call tweet-scraper
         process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
         assert process.stdout is not None
 
