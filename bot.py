@@ -165,7 +165,7 @@ if __name__ == "__main__":
         last_id = c.fetchone()
         first_id = None
 
-        # Set up tweet-scraper arguments
+        # Set up nitter-scraper arguments
         process_args = ["nitter-scraper", nitter_instance, "--skip-retweets", "--reorder-pinned" ]
         if last_id is not None:
             last_id = last_id[0]
@@ -192,8 +192,23 @@ if __name__ == "__main__":
                 c.execute('UPDATE users SET last_id=(?) WHERE user=(?)', (last_id ,user))
             conn.commit()
 
-        # Prune tweet-scraper process
+        # Prune nitter-scraper process
         process.wait(10)
-        if process.returncode != 0:
-            print(f"tweet-scraper non-zero exit code: {process.returncode}")
+        if process.returncode == 10:
+            # This account doesn't exist
+            try:
+                with lock:
+                    c.execute('INSERT INTO deleted_users VALUES (?)', (user,))
+                    conn.commit()
+            except:
+                pass
+        elif process.returncode != 0:
+            print(f"nitter-scraper non-zero exit code: {process.returncode}")
             sys.exit(1)
+        else:
+            try:
+                with lock:
+                    c.execute('DELETE FROM deleted_users WHERE user=(?)', (user,))
+                    conn.commit()
+            except:
+                pass
