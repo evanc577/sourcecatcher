@@ -14,9 +14,7 @@ It should also work on many other Linux distros.
 
 #### Required system packages
 
-* ffmpeg
-* [tweet-scraper](https://github.com/evanc577/tweet-scraper)
-    * chromium
+* [nitter-scraper](https://github.com/evanc577/nitter-scraper)
 
 #### Python modules
 
