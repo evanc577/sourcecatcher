@@ -1,9 +1,9 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from dcapp import dc_app, get_video_link
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, make_response, request, jsonify, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from image_search import image_search, image_search_cache
+from image_search import id2ts, image_search, image_search_cache
 from sc_exceptions import *
 from sc_helpers import render_page
 from werkzeug.exceptions import HTTPException
@@ -198,6 +198,28 @@ def twitter_users():
             }
 
     return render_page('twitter_users.html', **kwargs)
+
+
+@app.route("/twitter_users.csv")
+def twitter_users_csv():
+    conn = sqlite3.connect('live/twitter_scraper.db')
+    c = conn.cursor()
+
+    c.execute("""SELECT users.user, users.last_id, (deleted_users.user is NULL)
+              FROM users
+              LEFT JOIN deleted_users ON users.user=deleted_users.user
+              ORDER BY LOWER(users.user)""")
+    data = c.fetchall()
+    c.close()
+
+    csv = ""
+    for (user, last_id, is_active) in data:
+        active_str = "active" if is_active else "inactive"
+        time = datetime.fromtimestamp(id2ts(last_id), tz=timezone.utc).isoformat()
+        csv += f"{user},https://twitter.com/{user}/,{active_str},{time}\n"
+    response = make_response(csv)
+    response.mimetype = "text/plain"
+    return response
 
 
 def find_and_render(location, path):
