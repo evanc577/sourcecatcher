@@ -1,9 +1,15 @@
 {% extends "sourcecatcher.html" %}
 
 {% block results %}
-<div class="results_header">
+<div class="results_header twitter_user">
   <h2>All indexed Twitter users</h2>
   <h3>Currently indexing {{ user_count|e }} users</h3>
+  <p>
+    Users list maintained by
+    <a target="_blank" rel="noopener noreferrer" title="/u/ipwnmice" href="https://www.reddit.com/u/ipwnmice">/u/ipwnmice</a>
+    with help from
+    <a target="_blank" rel="noopener noreferrer" title="/u/ipwnmice" href="https://discord.gg/dreamcatcher">Dreamcatcher Discord</a>
+  </p>
 </div>
 <div class="results">
   <ul class="users_list">

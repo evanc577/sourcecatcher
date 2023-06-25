@@ -340,9 +340,8 @@ h2 {
 }
 
 h3 {
-  font-weight: normal;
   text-align: center;
-  margin-bottom: 0;
+  font-weight: normal;
 }
 
 a {
@@ -482,6 +481,8 @@ input[type=text] {
 
 .results_header {
   margin-top: 2em;
+  margin: 0 auto 20px auto;
+  max-width: 600px;
 }
 
 .results {
@@ -603,6 +604,10 @@ p.message {
 .error_code {
   color: var(--error-code);
   font-size: 1.5em;
+}
+
+.twitter_user > p {
+  text-align: center;
 }
 
 ul.users_list {
