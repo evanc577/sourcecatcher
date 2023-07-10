@@ -173,7 +173,7 @@ if __name__ == "__main__":
             process_args.extend(["--min-id", str(last_id + 1)])
         else:
             last_id = 0
-        process_args.extend([ f"user-with-replies", user ])
+        process_args.extend([ f"user-media", user ])
 
         process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
         assert process.stdout is not None
