@@ -2,7 +2,6 @@ from cachetools import cached, LRUCache
 from cachetools.keys import hashkey
 from datetime import timedelta, datetime
 from find_match import find
-from find_similar import find_similar
 from sc_exceptions import *
 import hashlib
 import os
@@ -64,29 +63,6 @@ def image_search(location, path):
         tweet_ids.append(str(tweet_id))
         id_score[tweet_id] = score_percent
         count += 1
-
-    # try content-based search if no matches are found
-    if count == 0:
-        try:
-            found = find_similar(path, location=location)
-            count = 0
-            for score, tweet_id, basename in found:
-                if tweet_id in id_score:
-                    continue
-
-                tweet_ids.append(str(tweet_id))
-                id_score[tweet_id] = score
-                count += 1
-        except ValueError as e:
-            if (str(e).startswith("Expected 2D array, got scalar array instead:")):
-                print("Image too small for experimental matcher")
-                pass
-            else:
-                raise e
-
-        # set warning message if tweets are found with content-based search
-        if count != 0:
-            warning_msg = "No exact matches found<br /><strong>Experimental:</strong> Showing close matches"
 
     # show error if no results are found
     if count == 0:
