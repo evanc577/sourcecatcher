@@ -84,7 +84,8 @@ def secs_to_str(secs):
 def download_content(url):
     MAX_DOWNLOAD = 15 * 1024 * 1024
     try:
-        response = requests.get(url, stream=True, timeout=30)
+        headers = {"User-Agent": "Sourcecatcher"}
+        response = requests.get(url, headers=headers, stream=True, timeout=30)
     except requests.exceptions.MissingSchema as e:
         try:
             # try https
