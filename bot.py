@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz
 from multiprocessing.pool import ThreadPool
@@ -129,6 +130,20 @@ def download_tweet(tweet):
 
     return tweet
 
+
+def create_users_list(config):
+    # Also read a list of additional users from another file
+    users = OrderedDict([(user, None) for user in config["users"]])
+    if "additional_users_files" in config:
+        for additional_users_file in config["additional_users_files"]:
+            with open(additional_users_file) as f:
+                for additional_user in f:
+                    user = additional_user.strip()
+                    if len(user) > 0:
+                        users[user] = None
+    return [user for (user, _) in users.items()]
+
+
 if __name__ == "__main__":
     # parse config.yaml
     try:
@@ -140,7 +155,7 @@ if __name__ == "__main__":
         print("error loading config file")
         sys.exit(1)
 
-    users = config['users']
+    users = create_users_list(config)
     media_dir = config['media_dir']
     nitter_instance = config["nitter_instance"]
 
