@@ -1,8 +1,6 @@
 from datetime import timedelta, datetime, timezone
 from dcapp import dc_app, get_video_link
 from flask import Flask, make_response, request, jsonify, send_from_directory
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from image_search import id2ts, image_search, image_search_cache
 from sc_exceptions import *
 from sc_helpers import render_page
@@ -48,12 +46,6 @@ def sha256(filename):
 
 app.jinja_env.globals.update(sha256=sha256)
 app.jinja_env.globals.update(urlescape=urlescape)
-
-limiter = Limiter(
-    app,
-    key_func=get_remote_address,
-    #  default_limits=["30 per minute", "1 per second"],
-)
 
 # parse config.yaml
 try:
@@ -133,7 +125,6 @@ def api_get_dcapp_video():
 
 
 @app.route('/upload', methods=['POST'])
-@limiter.limit("30/minute, 1/second")
 def upload():
     # remove old requests from cache
     cached_req_session.cache.remove_old_entries(datetime.now() - req_expire_after)
@@ -162,7 +153,6 @@ def root():
 
 
 @app.route('/link')
-@limiter.limit("30/minute, 1/second")
 def link():
     url = request.args.get('url')
     return find_and_render('url', url)
