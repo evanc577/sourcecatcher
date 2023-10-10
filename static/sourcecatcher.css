@@ -203,7 +203,7 @@ header {
   transform: scale(0.75);
 }
 
-input#theme-switch-toggle {
+#theme-switch-toggle > input[name="state-theme"] {
   width: 1px;
   height: 1px;
   overflow: hidden;
@@ -224,8 +224,6 @@ input#theme-switch-toggle {
   bottom: 0;
   border-radius: 34px;
   background-color: var(--theme-switch-bg-color);
-  -webkit-transition: .4s;
-  transition: .4s;
 }
 
 .slider-icon {
@@ -233,29 +231,32 @@ input#theme-switch-toggle {
   content: "";
   height: 26px;
   width: 26px;
-  left: 4px;
+  left: 17px;
+  right: 17px;
   bottom: 4px;
-  background-color: white;
+  border-radius: 50%;
   -webkit-transition: .4s;
   transition: .4s;
+}
+
+.slider-icon[data-theme="auto"] {
+  box-shadow: inset -7px -3px var(--moon-color);
   background-color: var(--sun-color);
 }
 
-#theme-switch-toggle:focus + label {
-  outline: 1px dotted lightgray;
-  outline: 1px auto -webkit-focus-ring-color;
+.slider-icon[data-theme="light"] {
+  -webkit-transform: translateX(-13px);
+  -ms-transform: translateX(-13px);
+  transform: translateX(-13px);
+  background-color: var(--sun-color);
 }
 
-#theme-switch-toggle:checked + label .slider .slider-icon {
-  -webkit-transform: translateX(26px);
-  -ms-transform: translateX(26px);
-  transform: translateX(26px);
+.slider-icon[data-theme="dark"] {
+  -webkit-transform: translateX(13px);
+  -ms-transform: translateX(13px);
+  transform: translateX(13px);
   box-shadow: inset -7px -3px var(--moon-color);
   background-color: var(--theme-switch-bg-color);
-}
-
-.slider-icon {
-  border-radius: 50%;
 }
 
 html, body {

@@ -85,31 +85,8 @@
       document.body.classList.remove('preload');
     },
     false);
-  const switch_toggle = document.querySelector('#theme-switch-toggle');
   const hamburger = document.querySelector('#menuToggle');
-  const currentTheme = localStorage.getItem('theme') ? localStorage.getItem('theme') : null;
-  function switchTheme(e) {
-    if (e.target.checked) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.setAttribute('data-theme', 'light');
-      localStorage.setItem('theme', 'light');
-    }
-  }
-  function toggleSwitch(e) {
-    if (e.keyCode === 13) {
-      if (e.target.checked === false) {
-        e.target.checked = true;
-        document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-      } else {
-        e.target.checked = false;
-        document.documentElement.setAttribute('data-theme', 'light');
-        localStorage.setItem('theme', 'light');
-      }
-    }
-  }
+
   function toggleMenu(e) {
     if (e.keyCode === 13) {
       if (e.target.checked === false) {
@@ -119,17 +96,55 @@
       }
     }
   }
-  switch_toggle.addEventListener('change', switchTheme, false);
-  switch_toggle.addEventListener('keyup', toggleSwitch, false);
-  hamburger.addEventListener('keyup', toggleMenu, false);
-  if (currentTheme) {
-    document.documentElement.setAttribute('data-theme', currentTheme);
-    if (currentTheme === 'dark') {
-      switch_toggle.checked = true;
-    } else {
-      switch_toggle.checked = false;
+
+  function currentTheme() {
+      let theme = localStorage.getItem("theme");
+      if (theme === null) {
+        theme = "auto";
+      }
+    return theme;
+  }
+
+  function switchTheme(theme) {
+    if (theme === null) {
+      theme = currentTheme();
     }
-  } else {
-      switch_toggle.checked = false;
+
+    localStorage.setItem('theme', theme);
+    for (let elem of document.querySelectorAll('input[type="radio"][name="state-theme"]')) {
+      if (elem.value === theme) {
+        elem.checked = true;
+      }
+    }
+    document.querySelector(".slider-icon").setAttribute("data-theme", theme);
+
+    if (theme === "auto") {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+
+  switchTheme(null);
+
+  function nextTheme() {
+    let theme = currentTheme();
+    if (theme === "auto") {
+      theme = "light";
+    } else if (theme === "light") {
+      theme = "dark";
+    } else if (theme === "dark") {
+      theme = "auto";
+    }
+    switchTheme(theme);
+  }
+
+  window.matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener('change',({ matches }) => {
+      switchTheme(null);
+    });
+  for (const elem of document.querySelectorAll('input[type="radio"][name="state-theme"]')) {
+    elem.addEventListener("change", (event) => {  
+      switchTheme(event.target.value);
+    });
   }
 </script>
