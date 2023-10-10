@@ -27,13 +27,9 @@ class NoMatchesFound(SCError):
 
     def reasons(self):
         reasons = [
+                "The image was heavily altered or cropped",
                 "Twitter is not the source of this image",
                 "Sourcecatcher is not following the source Twitter user",
-                "The source tweet was removed or deleted",
-                "The image was heavily altered or cropped",
-                "The source Twitter user deleted the tweet before Sourcecatcher analyzed it",
-                "The source Twitter user tweeted more than 3200 times since the source tweet",
-                "Sourcecatcher messed up",
                 ]
         return reasons
 
