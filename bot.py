@@ -75,7 +75,14 @@ def write_exif_date(path, filename, date):
 
 def download_tweet_media(tweet):
     """try to download images linked in tweet"""
-    for image in tweet["images"]:
+    if "images" in tweet:
+        images = tweet["images"]
+    elif "photos" in tweet:
+        images = [image["url"] for image in tweet["photos"]]
+    else:
+        images = []
+
+    for image in images:
         print('{}/{}:'.format(tweet['user']['screen_name'], tweet['id_str']))
         # tweet contains pictures
         path, date = mkdir(tweet['created_at'])
@@ -122,8 +129,8 @@ def download_tweet_media(tweet):
 
 def download_tweet(tweet):
     # skip if tweet is actually a retweet
-    if tweet["retweet"]:
-        return tweet
+    # if tweet["retweet"]:
+    #     return tweet
 
     # download tweet media
     download_tweet_media(tweet)
@@ -180,23 +187,14 @@ if __name__ == "__main__":
         last_id = c.fetchone()
         first_id = None
 
-        # Set up nitter-scraper arguments
-        process_args = ["nitter-scraper", nitter_instance, "--skip-retweets", "--reorder-pinned" ]
-        if last_id is not None:
-            last_id = last_id[0]
-            # Set min-id arg if we have seen this user before
-            process_args.extend(["--min-id", str(last_id + 1)])
-        else:
-            last_id = 0
-        process_args.extend([ f"user-media", user ])
-
+        # Set up discord scraper
+        process_args = ["sourcecatcher-discord-scraper", "config-discord.toml" ]
         process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
         assert process.stdout is not None
 
         # Download and process tweets
         with ThreadPool(20) as pool:
             for tweet in pool.imap(download_tweet, map(json.loads, process.stdout)):
-                assert str(tweet["id"]) == tweet["id_str"]
                 last_id = max(last_id, int(tweet["id_str"]))
 
         # update last tweet read
