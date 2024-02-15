@@ -18,3 +18,4 @@ youtube_dl
 bsddb3==6.2.7
 cachetools==4.2.2
 MarkupSafe==2.0.1
+python-dateutil

@@ -3,6 +3,7 @@ from datetime import datetime
 from multiprocessing.pool import ThreadPool
 from PIL import Image
 from threading import Lock
+import dateutil.parser as dt_parser
 import json
 import os
 import piexif
@@ -22,7 +23,7 @@ def mkdir(time_str):
     Arguments:
     time_str: time string returned by twitter api
     """
-    date = datetime.fromisoformat(time_str)
+    date = dt_parser.parse(time_str)
     year = '{:04d}'.format(date.year)
     month = '{:02d}'.format(date.month)
 
