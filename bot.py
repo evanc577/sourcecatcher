@@ -1,6 +1,5 @@
 from collections import OrderedDict
 from datetime import datetime
-from email.utils import parsedate_tz, mktime_tz
 from multiprocessing.pool import ThreadPool
 from PIL import Image
 from threading import Lock
@@ -23,8 +22,7 @@ def mkdir(time_str):
     Arguments:
     time_str: time string returned by twitter api
     """
-    timestamp = mktime_tz(parsedate_tz(time_str))
-    date = datetime.fromtimestamp(timestamp)
+    date = datetime.fromisoformat(time_str)
     year = '{:04d}'.format(date.year)
     month = '{:02d}'.format(date.month)
 
@@ -178,50 +176,18 @@ if __name__ == "__main__":
         c.execute('CREATE TABLE IF NOT EXISTS hashtags (hashtag text, id int64, UNIQUE (hashtag, id))')
         c.execute('CREATE TABLE IF NOT EXISTS deleted_users (user text, UNIQUE (user))')
 
-    for i, user in enumerate(users):
-        print('Checking {} for new tweets'.format(user))
-        user = user.lower()
-        # find the last read tweet
-        with lock:
-            c.execute('SELECT last_id FROM users WHERE user=?', (user,))
-        last_id = c.fetchone()
-        first_id = None
+    # Set up discord scraper
+    process_args = ["sourcecatcher-discord-scraper", "config-discord.toml" ]
+    process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
+    assert process.stdout is not None
 
-        # Set up discord scraper
-        process_args = ["sourcecatcher-discord-scraper", "config-discord.toml" ]
-        process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
-        assert process.stdout is not None
+    # Download and process tweets
+    with ThreadPool(20) as pool:
+        for tweet in pool.imap(download_tweet, map(json.loads, process.stdout)):
+            pass
 
-        # Download and process tweets
-        with ThreadPool(20) as pool:
-            for tweet in pool.imap(download_tweet, map(json.loads, process.stdout)):
-                last_id = max(last_id, int(tweet["id_str"]))
-
-        # update last tweet read
-        with lock:
-            try:
-                c.execute('INSERT INTO users VALUES (?,?)', (user, last_id))
-            except sqlite3.IntegrityError:
-                c.execute('UPDATE users SET last_id=(?) WHERE user=(?)', (last_id ,user))
-            conn.commit()
-
-        # Prune nitter-scraper process
-        process.wait(10)
-        if process.returncode == 10:
-            # This account doesn't exist
-            try:
-                with lock:
-                    c.execute('INSERT INTO deleted_users VALUES (?)', (user,))
-                    conn.commit()
-            except:
-                pass
-        elif process.returncode != 0:
-            print(f"nitter-scraper non-zero exit code: {process.returncode}")
-            sys.exit(1)
-        else:
-            try:
-                with lock:
-                    c.execute('DELETE FROM deleted_users WHERE user=(?)', (user,))
-                    conn.commit()
-            except:
-                pass
+    # Prune discord-scraper process
+    process.wait(10)
+    if process.returncode != 0:
+        print(f"nitter-scraper non-zero exit code: {process.returncode}")
+        sys.exit(1)
