@@ -23,6 +23,7 @@ rm -rf $WORKING_DIR/*
 echo "copying to working directory"
 cp $LIVE_DIR/twitter_scraper.db $WORKING_DIR
 cp $LIVE_DIR/phash_index.ann $WORKING_DIR
+cp $LIVE_DIR/discord.db $WORKING_DIR
 
 source ./sourcecatcher_venv/bin/activate
 echo "starting ingest"
@@ -33,5 +34,6 @@ python gen_phashes.py
 echo "moving to live directory"
 mv -f $WORKING_DIR/twitter_scraper.db $LIVE_DIR
 mv -f $WORKING_DIR/phash_index.ann $LIVE_DIR
+mv -f $WORKING_DIR/discord.db $LIVE_DIR
 
 echo "update complete"

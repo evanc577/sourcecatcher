@@ -163,7 +163,6 @@ if __name__ == "__main__":
 
     users = create_users_list(config)
     media_dir = config['media_dir']
-    nitter_instance = config["nitter_instance"]
 
     lock = Lock()
 
@@ -190,5 +189,5 @@ if __name__ == "__main__":
     # Prune discord-scraper process
     process.wait(10)
     if process.returncode != 0:
-        print(f"nitter-scraper non-zero exit code: {process.returncode}")
+        print(f"discord-scraper non-zero exit code: {process.returncode}")
         sys.exit(1)
