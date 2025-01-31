@@ -176,6 +176,11 @@ if __name__ == "__main__":
         c.execute('CREATE TABLE IF NOT EXISTS hashtags (hashtag text, id int64, UNIQUE (hashtag, id))')
         c.execute('CREATE TABLE IF NOT EXISTS deleted_users (user text, UNIQUE (user))')
 
+
+    #
+    # DISCORD SCRAPER
+    #
+
     # Set up discord scraper
     process_args = ["sourcecatcher-discord-scraper", "config-discord.toml" ]
     process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
@@ -191,3 +196,56 @@ if __name__ == "__main__":
     if process.returncode != 0:
         print(f"discord-scraper non-zero exit code: {process.returncode}")
         sys.exit(1)
+
+
+    #
+    # NITTER SCRAPER
+    #
+    nitter_instance = config["nitter_instance"]
+    if nitter_instance is not None:
+        for i, user in enumerate(users):
+            print('nitter-scraper checking {} for new tweets'.format(user))
+            user = user.lower()
+            # find the last read tweet
+            with lock:
+                c.execute('SELECT last_id FROM users WHERE user=?', (user,))
+            last_id = c.fetchone()
+            first_id = None
+
+            # Set up nitter-scraper arguments
+            process_args = ["nitter-scraper", nitter_instance, "--skip-retweets", "--reorder-pinned" ]
+            if last_id is not None:
+                last_id = last_id[0]
+                # Set min-id arg if we have seen this user before
+                process_args.extend(["--min-id", str(last_id + 1)])
+            else:
+                last_id = 0
+            process_args.extend([ f"user-media", user ])
+
+            process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
+            assert process.stdout is not None
+
+            # Download and process tweets
+            with ThreadPool(20) as pool:
+                for tweet in pool.imap(download_tweet, map(json.loads, process.stdout)):
+                    assert str(tweet["id"]) == tweet["id_str"]
+                    last_id = max(last_id, int(tweet["id_str"]))
+
+            # update last tweet read
+            with lock:
+                try:
+                    c.execute('INSERT INTO users VALUES (?,?)', (user, last_id))
+                except sqlite3.IntegrityError:
+                    c.execute('UPDATE users SET last_id=(?) WHERE user=(?)', (last_id ,user))
+                conn.commit()
+
+            # Prune nitter-scraper process
+            process.wait(10)
+            if process.returncode == 10:
+                # This account doesn't exist
+                pass
+            elif process.returncode != 0:
+                print(f"nitter-scraper non-zero exit code: {process.returncode} (non-fatal)")
+            else:
+                # OK
+                pass

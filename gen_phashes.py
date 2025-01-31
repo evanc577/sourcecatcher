@@ -16,7 +16,7 @@ def calc_phash(files):
     filename = os.path.join(files[1][0], files[1][1])
 
     phash = imagehash.phash(Image.open(filename))
-    print('file #{:08d}, phash: {}, filename: {}'.format(i, str(phash), filename))
+    # print('file #{:08d}, phash: {}, filename: {}'.format(i, str(phash), filename))
 
     basename = os.path.basename(filename)
     dirname = os.path.dirname(filename)
@@ -73,6 +73,7 @@ def gen_phash():
                 c.execute('INSERT INTO hashes VALUES (?,?,?,?)', (r[0], r[1], r[2], r[3]))
             except sqlite3.IntegrityError:
                 pass
+    print("finished hashing files")
 
     # insert hashes into annoy
     c.execute('SELECT idx,hash from hashes')
