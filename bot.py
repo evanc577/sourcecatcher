@@ -204,7 +204,6 @@ if __name__ == "__main__":
     nitter_instance = config["nitter_instance"]
     if nitter_instance is not None:
         for i, user in enumerate(users):
-            print('nitter-scraper checking {} for new tweets'.format(user))
             user = user.lower()
             # find the last read tweet
             with lock:
@@ -221,6 +220,8 @@ if __name__ == "__main__":
             else:
                 last_id = 0
             process_args.extend([ f"user-media", user ])
+            print(f'nitter-scraper checking {user} for new tweets from id {last_id}')
+            print(f"{process_args}")
 
             process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
             assert process.stdout is not None
