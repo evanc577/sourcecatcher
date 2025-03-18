@@ -1,0 +1,7 @@
+*
+
+!src/
+!scripts/
+!systemd/
+
+!requirements.txt

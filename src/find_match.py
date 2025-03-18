@@ -4,7 +4,7 @@ import PIL
 from PIL import Image
 from io import BytesIO
 from annoy import AnnoyIndex
-from sc_helpers import download_content
+from sc_helpers import *
 import imagehash
 import argparse
 import sys
@@ -29,8 +29,8 @@ def find(location, path):
 
     # load database and annoy index
     index = AnnoyIndex(64, metric='hamming')
-    index.load('live/phash_index.ann')
-    conn = sqlite3.connect('live/twitter_scraper.db')
+    index.load(os.path.join(base_path(), 'live/phash_index.ann'))
+    conn = sqlite3.connect(os.path.join(base_path(), 'live/twitter_scraper.db'))
     c = conn.cursor()
 
     # load the requested image

@@ -3,7 +3,7 @@ from dcapp import dc_app, get_video_link
 from flask import Flask, make_response, request, jsonify, send_from_directory
 from image_search import id2ts, image_search, image_search_cache
 from sc_exceptions import *
-from sc_helpers import render_page
+from sc_helpers import *
 from werkzeug.exceptions import HTTPException
 import hashlib
 import os
@@ -49,8 +49,7 @@ app.jinja_env.globals.update(urlescape=urlescape)
 
 # parse config.yaml
 try:
-    dirpath = os.path.dirname(os.path.realpath(__file__))
-    path = os.path.join(dirpath, 'config.yaml')
+    path = config_file_path()
     with open(path) as f:
         config = yaml.safe_load(f)
 except IOError:
@@ -161,7 +160,7 @@ def link():
 @app.route('/twitter_users')
 def twitter_users():
     """Show list of indexed twitter users"""
-    conn = sqlite3.connect('live/twitter_scraper.db')
+    conn = sqlite3.connect(os.path.join(base_path(), 'live/twitter_scraper.db'))
     c = conn.cursor()
 
     # get all users
@@ -192,7 +191,7 @@ def twitter_users():
 
 @app.route("/twitter_users.csv")
 def twitter_users_csv():
-    conn = sqlite3.connect('live/twitter_scraper.db')
+    conn = sqlite3.connect(os.path.join(base_path(), 'live/twitter_scraper.db'))
     c = conn.cursor()
 
     c.execute("""SELECT users.user, users.last_id, (deleted_users.user is NULL)
@@ -231,7 +230,7 @@ def find_and_render(location, path):
                 #  return dc_app(path)
 
         # clear image_search() lru cache if database was updated
-        db_mtime = os.path.getmtime('live/twitter_scraper.db')
+        db_mtime = os.path.getmtime(os.path.join(base_path(), 'live/twitter_scraper.db'))
         if redis_db.get("db_mtime") != bytes(str(db_mtime), "utf-8"):
             print("clearing image_search() cache")
             image_search_cache.clear()

@@ -2,6 +2,7 @@ from multiprocessing import Pool, TimeoutError, cpu_count
 from pathlib import Path
 from PIL import Image
 from annoy import AnnoyIndex
+from sc_helpers import config_file_path
 import imagehash
 import os
 import yaml
@@ -29,8 +30,7 @@ def gen_phash():
 
     # parse config.yaml
     try:
-        dirpath = os.path.dirname(os.path.realpath(__file__))
-        path = os.path.join(dirpath, 'config.yaml')
+        path = config_file_path()
         with open(path) as f:
             config = yaml.safe_load(f)
     except IOError:

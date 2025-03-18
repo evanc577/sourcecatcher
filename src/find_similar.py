@@ -6,6 +6,7 @@ import pickle
 from annoy import AnnoyIndex
 import sqlite3
 from find_match import download_content
+from sc_helpers import *
 import joblib
 import time
 
@@ -42,13 +43,13 @@ def find_similar(img_path, location='file'):
     global kmeans
 
     # load files
-    annoy_map = joblib.load('live/BOW_annoy_map.pkl')
-    kmeans = joblib.load('live/kmeans.pkl')
+    annoy_map = joblib.load(os.path.join(base_path(), 'live/BOW_annoy_map.pkl'))
+    kmeans = joblib.load(os.path.join(base_path(), 'live/kmeans.pkl'))
 
     index = AnnoyIndex(kmeans.n_clusters, 'angular')
-    index.load('live/BOW_index.ann')
+    index.load(os.path.join(base_path(), 'live/BOW_index.ann'))
 
-    conn = sqlite3.connect('live/twitter_scraper.db')
+    conn = sqlite3.connect(os.path.join(base_path(), 'live/twitter_scraper.db'))
     c = conn.cursor()
 
     # compute histogram

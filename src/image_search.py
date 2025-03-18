@@ -10,11 +10,11 @@ import requests_cache
 import sqlite3
 import sys
 import yaml
+from sc_helpers import *
 
 # parse config.yaml
 try:
-    dirpath = os.path.dirname(os.path.realpath(__file__))
-    path = os.path.join(dirpath, 'config.yaml')
+    path = config_file_path()
     with open(path) as f:
         config = yaml.safe_load(f)
 except IOError:
@@ -117,7 +117,7 @@ def get_saved_tweet(tweet_id, score):
     """
     Create tweet embed from saved data
     """
-    conn = sqlite3.connect('live/twitter_scraper.db')
+    conn = sqlite3.connect(os.path.join(base_path(), 'live/twitter_scraper.db'))
     c = conn.cursor()
 
     tweet = {}

@@ -2,6 +2,7 @@ from collections import OrderedDict
 from datetime import datetime
 from multiprocessing.pool import ThreadPool
 from PIL import Image
+from sc_helpers import config_file_path
 from threading import Lock
 import dateutil.parser as dt_parser
 import json
@@ -153,8 +154,7 @@ def create_users_list(config):
 if __name__ == "__main__":
     # parse config.yaml
     try:
-        dirpath = os.path.dirname(os.path.realpath(__file__))
-        path = os.path.join(dirpath, 'config.yaml')
+        path = config_file_path()
         with open(path) as f:
             config = yaml.safe_load(f)
     except IOError:

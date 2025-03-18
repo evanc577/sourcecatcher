@@ -1,0 +1,10 @@
+[Unit]
+Description=Gunicorn instance to serve sourcecatcher
+After=network.target redis
+
+[Service]
+WorkingDirectory=/sourcecatcher/src/
+ExecStart=/usr/local/bin/gunicorn -c gunicorn.config.py -w 9 -b 0.0.0.0:80 -m 007 wsgi:app
+
+[Install]
+WantedBy=multi-user.target

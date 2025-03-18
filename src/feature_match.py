@@ -11,6 +11,7 @@ import joblib
 from annoy import AnnoyIndex
 import yaml
 import bsddb3
+from sc_helpers import config_file_path
 
 detector = cv2.ORB_create()
 computer = cv2.xfeatures2d.FREAK_create()
@@ -66,8 +67,7 @@ def gen_cbir():
     # parse config.yaml
     print("parsing config")
     try:
-        dirpath = os.path.dirname(os.path.realpath(__file__))
-        path = os.path.join(dirpath, 'config.yaml')
+        path = config_file_path()
         with open(path) as f:
             config = yaml.safe_load(f)
     except IOError:

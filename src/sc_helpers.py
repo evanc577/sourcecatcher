@@ -37,13 +37,13 @@ def get_news():
 
 def stats():
     """returns stats for the database"""
-    conn = sqlite3.connect('live/twitter_scraper.db')
+    conn = sqlite3.connect(os.path.join(base_path(), 'live/twitter_scraper.db'))
     c = conn.cursor()
 
     c.execute('SELECT MAX(_ROWID_) FROM info LIMIT 1')
     num_photos = c.fetchone()[0]
 
-    mtime = datetime.utcfromtimestamp(os.path.getmtime('live/twitter_scraper.db'))
+    mtime = datetime.utcfromtimestamp(os.path.getmtime(os.path.join(base_path(), 'live/twitter_scraper.db')))
     now = datetime.utcnow()
     time_diff = secs_to_str((now - mtime).seconds)
 
@@ -111,3 +111,11 @@ def download_content(url):
             raise EntityTooLarge
 
     return content
+
+
+def base_path():
+    return "/sourcecatcher"
+
+
+def config_file_path():
+    return os.path.join(base_path(), "config/config.yaml")
