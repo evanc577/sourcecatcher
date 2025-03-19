@@ -1,0 +1,12 @@
+[Unit]
+Description=Update Sourcecatcher database
+After=network.target
+
+[Service]
+WorkingDirectory=/sourcecatcher
+ExecStart=/bin/bash /sourcecatcher/scripts/update.sh
+ExecStopPost=/usr/bin/find /sourcecatcher/images/ -type f -mtime +3 -delete
+CPUWeight=20
+IOWeight=20
+MemoryHigh=2G
+MemoryMax=2.5G
