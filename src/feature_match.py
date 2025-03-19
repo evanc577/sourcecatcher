@@ -11,7 +11,7 @@ import joblib
 from annoy import AnnoyIndex
 import yaml
 import bsddb3
-from sc_helpers import config_file_path
+from sc_helpers import *
 
 detector = cv2.ORB_create()
 computer = cv2.xfeatures2d.FREAK_create()
@@ -80,15 +80,15 @@ def gen_cbir():
 
     # connect to sqlite database
     print("connecting to databases")
-    conn = sqlite3.connect('working/twitter_scraper.db')
+    conn = sqlite3.connect(os.path.join(base_path(), 'working/twitter_scraper.db'))
     c = conn.cursor()
 
     # load descriptors
     descriptors = bsddb3.db.DB()
-    if os.path.exists("working/descriptors.bdb"):
-        descriptors.open("working/descriptors.bdb")
+    if os.path.exists(os.path.join(base_path(), "working/descriptors.bdb")):
+        descriptors.open(os.path.join(base_path(), "working/descriptors.bdb"))
     else:
-        descriptors.open("working/descriptors.bdb", dbtype=bsddb3.db.DB_BTREE, flags=bsddb3.db.DB_CREATE)
+        descriptors.open(os.path.join(base_path(), "working/descriptors.bdb"), dbtype=bsddb3.db.DB_BTREE, flags=bsddb3.db.DB_CREATE)
 
     # calculate descriptors of new images
     print("determine files to compute")
@@ -116,7 +116,7 @@ def gen_cbir():
 
     # create clusters
     try:
-        kmeans = joblib.load('working/kmeans.pkl')
+        kmeans = joblib.load(os.path.join(base_path(), 'working/kmeans.pkl'))
         n_clusters = kmeans.cluster_centers_.shape[0]
     except:
         n_clusters = 512
@@ -151,7 +151,7 @@ def gen_cbir():
 
     # save kmeans
     print("saving kmeans")
-    joblib.dump(kmeans, 'working/kmeans.pkl')
+    joblib.dump(kmeans, os.path.join(base_path(), 'working/kmeans.pkl'))
 
     # set up structures for annoy index
     print("setting up annoy structures")
@@ -167,7 +167,7 @@ def gen_cbir():
         BOW_annoy_map[i] = f
 
     index = AnnoyIndex(n_clusters, 'angular')
-    index.on_disk_build('working/BOW_index.ann')
+    index.on_disk_build(os.path.join(base_path(), 'working/BOW_index.ann'))
 
     # add histograms to annoy index
     print("computing histograms")
@@ -185,7 +185,7 @@ def gen_cbir():
 
     # save index map
     print("saving annoy map")
-    joblib.dump(BOW_annoy_map, 'working/BOW_annoy_map.pkl')
+    joblib.dump(BOW_annoy_map, os.path.join(base_path(), 'working/BOW_annoy_map.pkl'))
 
 if __name__ == '__main__':
     gen_cbir()

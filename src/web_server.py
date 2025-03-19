@@ -1,5 +1,4 @@
 from datetime import timedelta, datetime, timezone
-from dcapp import dc_app, get_video_link
 from flask import Flask, make_response, request, jsonify, send_from_directory
 from image_search import id2ts, image_search, image_search_cache
 from sc_exceptions import *
@@ -18,7 +17,6 @@ import urllib
 import yaml
 
 UPLOAD_FOLDER = 'uploads'
-VIDEOS_FOLDER = 'dcapp_videos'
 try:
     os.mkdir(UPLOAD_FOLDER)
 except:
@@ -27,7 +25,6 @@ ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['VIDEOS_FOLDER'] = VIDEOS_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
@@ -109,18 +106,6 @@ def entity_too_large(e):
             'page_title': 'Error',
             }
     return render_page('error.html', **kwargs)
-
-
-@app.route('/api/get_dcapp_video')
-def api_get_dcapp_video():
-    url = request.args.get('url')
-    if url is None:
-        return (jsonify({'reason': 'no url specified'}), 400)
-    try:
-        filename = get_video_link(url)
-        return send_from_directory(app.config['VIDEOS_FOLDER'], filename)
-    except VideoDownloadError:
-        return (jsonify({'reason': 'could not download video'}), 404)
 
 
 @app.route('/upload', methods=['POST'])
@@ -227,7 +212,6 @@ def find_and_render(location, path):
                     extract.domain == 'candlemystar' and \
                     extract.suffix == 'com':
                 raise SCError('DC App has closed and is no longer supported')
-                #  return dc_app(path)
 
         # clear image_search() lru cache if database was updated
         db_mtime = os.path.getmtime(os.path.join(base_path(), 'live/twitter_scraper.db'))

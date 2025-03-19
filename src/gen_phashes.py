@@ -2,7 +2,7 @@ from multiprocessing import Pool, TimeoutError, cpu_count
 from pathlib import Path
 from PIL import Image
 from annoy import AnnoyIndex
-from sc_helpers import config_file_path
+from sc_helpers import *
 import imagehash
 import os
 import yaml
@@ -40,7 +40,7 @@ def gen_phash():
     index = AnnoyIndex(64, metric='hamming')
 
     # set up database
-    conn = sqlite3.connect('working/twitter_scraper.db')
+    conn = sqlite3.connect(os.path.join(base_path(), 'working/twitter_scraper.db'))
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS hashes (filename text, path text, idx int32, hash text, UNIQUE (idx))')
 
@@ -91,7 +91,7 @@ def gen_phash():
     conn.commit()
 
     index.build(50)
-    index.save('working/phash_index.ann')
+    index.save(os.path.join(base_path(), 'working/phash_index.ann'))
 
 
 if __name__ == '__main__':

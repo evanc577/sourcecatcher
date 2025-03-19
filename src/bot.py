@@ -2,7 +2,7 @@ from collections import OrderedDict
 from datetime import datetime
 from multiprocessing.pool import ThreadPool
 from PIL import Image
-from sc_helpers import config_file_path
+from sc_helpers import *
 from threading import Lock
 import dateutil.parser as dt_parser
 import json
@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
     lock = Lock()
 
-    conn = sqlite3.connect('working/twitter_scraper.db', check_same_thread=False)
+    conn = sqlite3.connect(os.path.join(base_path(), 'working/twitter_scraper.db'), check_same_thread=False)
     c = conn.cursor()
     with lock:
         c.execute('CREATE TABLE IF NOT EXISTS users (user text, last_id int64, UNIQUE (user))')

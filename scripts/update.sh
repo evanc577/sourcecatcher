@@ -13,8 +13,8 @@ while ! mkdir $LOCK 2> /dev/null; do
 done
 echo "acquired lock"
 
-LIVE_DIR=live/
-WORKING_DIR=working
+LIVE_DIR=../live/
+WORKING_DIR=../working/
 mkdir -p $LIVE_DIR
 mkdir -p $WORKING_DIR
 

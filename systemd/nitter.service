@@ -1,0 +1,16 @@
+[Unit]
+Description=Nitter
+After=network.target redis
+Requires=redis
+
+[Service]
+User=nitter
+Group=nitter
+WorkingDirectory=/nitter
+ExecStartPre=/bin/sh -c 'until redis-cli ping; do sleep 1; done'
+ExecStart=/usr/local/bin/nitter
+Restart=always
+RestartSec=1s
+
+[Install]
+WantedBy=multi-user.target

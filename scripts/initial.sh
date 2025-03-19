@@ -8,8 +8,8 @@ echo    # (optional) move to a new line
 
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-  LIVE_DIR=live/
-  WORKING_DIR=working/
+  LIVE_DIR=../live/
+  WORKING_DIR=../working/
   mkdir -p $LIVE_DIR
   mkdir -p $WORKING_DIR
 

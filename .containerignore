@@ -3,5 +3,6 @@
 !src/
 !scripts/
 !systemd/
+!nitter/
 
 !requirements.txt
