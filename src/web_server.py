@@ -121,9 +121,8 @@ def upload():
 
     # remove old files
     uploads = ['{}/{}'.format(app.config['UPLOAD_FOLDER'], n) for n in os.listdir(app.config['UPLOAD_FOLDER'])]
-    files = sorted(uploads, key=os.path.getctime)
-    if len(files) > 128:
-        os.remove(files[0])
+    for file in uploads:
+        os.remove(file)
 
     return html
 
