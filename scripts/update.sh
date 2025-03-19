@@ -13,8 +13,8 @@ while ! mkdir $LOCK 2> /dev/null; do
 done
 echo "acquired lock"
 
-LIVE_DIR=../live/
-WORKING_DIR=../working/
+LIVE_DIR=/sourcecatcher/live/
+WORKING_DIR=/sourcecatcher/working/
 mkdir -p $LIVE_DIR
 mkdir -p $WORKING_DIR
 
@@ -25,11 +25,10 @@ cp $LIVE_DIR/twitter_scraper.db $WORKING_DIR
 cp $LIVE_DIR/phash_index.ann $WORKING_DIR
 cp $LIVE_DIR/discord.db $WORKING_DIR
 
-source ./sourcecatcher_venv/bin/activate
 echo "starting ingest"
-python bot.py
+python /sourcecatcher/src/bot.py
 echo "starting phash"
-python gen_phashes.py
+python /sourcecatcher/src/gen_phashes.py
 
 echo "moving to live directory"
 mv -f $WORKING_DIR/twitter_scraper.db $LIVE_DIR

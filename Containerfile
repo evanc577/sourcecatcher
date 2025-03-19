@@ -1,30 +1,31 @@
-FROM almalinux:9 as builder
+FROM almalinux:9 as rust-builder
 RUN dnf group install -y 'Development Tools'
 RUN bash -c 'curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
 ENV PATH=/root/.cargo/bin:$PATH
-RUN bash -c 'curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y'
-ENV PATH=/root/.nimble/bin:$PATH
 
 
-FROM builder as nitter-scraper-builder
+FROM rust-builder as nitter-scraper-builder
 RUN cargo install --git https://github.com/evanc577/nitter-scraper.git
 
 
-FROM builder as discord-scraper-builder
+FROM rust-builder as discord-scraper-builder
 RUN dnf install -y openssl-devel
+ENV RUSTFLAGS="--cfg tokio_unstable"
 RUN cargo install --git https://github.com/evanc577/sourcecatcher-discord-scraper.git
 
 
-FROM builder as nitter-builder
-RUN dnf install -y epel-release
-RUN dnf install -y libsass-devel
+FROM ubuntu:latest as nitter-builder
+RUN apt-get update
+RUN apt-get install -y libsass-dev gcc git libc-dev nim
 WORKDIR /src
 RUN git clone https://github.com/zedeus/nitter
 WORKDIR /src/nitter
+RUN nimble install -y --depsOnly
 RUN nimble build -d:danger -d:lto -d:strip --mm:refc && nimble scss && nimble md
 
 
 FROM almalinux:9-minimal
+LABEL org.opencontainers.image.source="https://github.com/evanc577/sourcecatcher"
 
 WORKDIR /sourcecatcher
 RUN microdnf install -y python3 python3-devel python3-pip libdb-devel gcc gcc-c++ redis

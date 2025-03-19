@@ -182,20 +182,21 @@ if __name__ == "__main__":
     #
 
     # Set up discord scraper
-    process_args = ["sourcecatcher-discord-scraper", "config-discord.toml" ]
-    process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
-    assert process.stdout is not None
+    if "scrape_discord" in config and config["scrape_discord"]:
+        process_args = ["sourcecatcher-discord-scraper", os.path.join(base_path(), "config/config-discord.toml") ]
+        process = subprocess.Popen(process_args, stdout=subprocess.PIPE)
+        assert process.stdout is not None
 
-    # Download and process tweets
-    with ThreadPool(20) as pool:
-        for tweet in pool.imap(download_tweet, map(json.loads, process.stdout)):
-            pass
+        # Download and process tweets
+        with ThreadPool(20) as pool:
+            for tweet in pool.imap(download_tweet, map(json.loads, process.stdout)):
+                pass
 
-    # Prune discord-scraper process
-    process.wait(10)
-    if process.returncode != 0:
-        print(f"discord-scraper non-zero exit code: {process.returncode}")
-        sys.exit(1)
+        # Prune discord-scraper process
+        process.wait(10)
+        if process.returncode != 0:
+            print(f"discord-scraper non-zero exit code: {process.returncode}")
+            sys.exit(1)
 
 
     #
