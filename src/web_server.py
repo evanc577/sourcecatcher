@@ -110,9 +110,6 @@ def entity_too_large(e):
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    # remove old requests from cache
-    cached_req_session.cache.remove_old_entries(datetime.now() - req_expire_after)
-
     f = request.files['file']
     filename = '{:016x}'.format(random.randint(0, 1<<128))
     path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -129,9 +126,6 @@ def upload():
 
 @app.route('/')
 def root():
-    # remove old requests from cache
-    cached_req_session.cache.remove_old_entries(datetime.now() - req_expire_after)
-
     return render_page('sourcecatcher.html')
 
 
