@@ -7,115 +7,102 @@ See the [Reddit release thread](https://www.reddit.com/r/dreamcatcher/comments/c
 
 ## Setup
 
-Sourcecatcher has been tested on Arch Linux and Ubuntu 19.04.
-It should also work on many other Linux distros.
+Sourcecatcher is published as an OCI container.
 
-### Install requirements
+### Directory structure
 
-#### Required system packages
+```
+$ tree
+.
+├── config
+│   ├── nitter
+│   │   └── sessions.jsonl
+│   └── sourcecatcher
+│       ├── config-discord.toml
+│       └── config.yaml
+└── live
+    ├── discord.db
+    ├── phash_index.ann
+    └── twitter_scraper.db
+```
 
-* [nitter-scraper](https://github.com/evanc577/nitter-scraper)
+See [Config files](#config-files) section for configuration file setup.
+The `live` directory contains Sourcecatcher's databases, it should be persisted to a host directory (See next section).
 
-#### Python modules
+### Quadlet setup
 
-Sourcecatcher has been tested on python 3.7, but should work on other recent versions of python 3 also
+Create quadlet generator file. Remember to configure container network and volume mounts setup.
+```
+$ cat ~/.config/containers/systemd/sourcecatcher.container 
+[Unit]
+Description=Sourcecatcher reverse image search service
+After=network.target
 
-```bash
-python -m venv sourcecatcher_venv           # create python virtual environment
-source ./sourcecatcher_venv/bin/activate
-pip install -r requirements.txt
-````
+[Container]
+ContainerName=sourcecatcher
+Image=ghcr.io/evanc577/sourcecatcher:latest
+AutoUpdate=registry
+Network=bridge
+PublishPort=9000:80
+Volume=/home/sourcecatcher/config/sourcecatcher/:/sourcecatcher/config/:Z,ro
+Volume=/home/sourcecatcher/config/nitter/sessions.jsonl:/nitter/sessions.jsonl:Z,ro
+Volume=/home/sourcecatcher/live/:/sourcecatcher/live/:Z
 
-### Create `config.yaml`
+[Install]
+WantedBy=multi-user.target default.target
+```
+Start the container
+```console
+$ systemctl --user daemon-reload
+$ systemctl --user start sourcecatcher.service
+```
+
+### Config files
+
+#### `config.yaml`
 
 `config.yaml` contains runtime information needed by Sourcecatcher.
-You will need to apply for the Twitter api and create an app.
 
 ```yaml
-media_dir: "path/to/directory/to/store/images"
+# Don't need to change for OCI container
+media_dir: "/sourcecatcher/images/"
+nitter_instance: "http://0.0.0.0:8080"
 
+# Image hashing options
+cpus: 4
+recalculate_kmeans: False
+
+# Set to true to enable scraping discord server channels for Twitter links
+scrape_discord: true
+
+# These users will show up first in search results
+priority_users:
+  - "hf_dreamcatcher"
+  - "jp_dreamcatcher"
+  - "7_DREAMERS"
+  - "2Moori"
+
+# Set of users to scrape via Nitter
 users:
-  - "twitter user to scrape 1"
-  - "user 2"
-  - "user 3"
+  - "hf_dreamcatcher"
+  - "7_DREAMERS"
+  - "2Moori"
 ```
 
-### Create and update the database
+#### `config-discord.toml`
 
-The bash scripts are used for creating and updating Sourceactcher's internal database
+```
+database_file = "working/discord.db"
+discord_token = "your-discord-api-token"
 
-```bash
-./initial.sh      # create/recreate the database. scrapes all users, may take a few hours
-./update.sh       # fetch the latest tweets and update the database, also backups the current databse
-./backup.sh       # make a backup of the current database now
+# List of Discord channel IDs to scape
+watched_channels = [
+    "253293425460248580",
+    "253293450030481418",
+]
 ```
 
-### Set up web server
+#### `sessions.jsonl`
 
-I use nginx + gunicorn, with systemd to manage it.
-You could use anything else if you want though.
-Note the systemd service paths may be different for your distribution.
-
-#### `/etc/systemd/system/sourcecatcher.service`
-
-This service runs Sourcecatcher
-
-```systemd
-[Unit]
-Description=Gunicorn instance to serve sourcecatcher
-After=network.target
-
-[Service]
-User=YOUR_USER
-Group=www-data
-WorkingDirectory=/PATH/TO/sourcecatcher
-Environment="PATH=/PATH/TO/sourcecatcher/sourcecatcher_venv/bin:/usr/bin"
-ExecStart=/PATH/TO/sourcecatcher/sourcecatcher_venv/bin/gunicorn -c gunicorn.config.py -w 9 -b unix:sourcecatcher.sock -m 007 wsgi:app
-
-[Install]
-WantedBy=multi-user.target
-```
-
-#### `/etc/systemd/system/sourcecatcher_update.service`
-
-This service updates Sourcecatcher with new tweets
-
-```systemd
-[Unit]
-Description=Update sourcecatcher
-After=network.target
-
-[Service]
-User=YOUR_USER
-Group=www-data
-WorkingDirectory=/PATH/TO/sourcecatcher
-Environment="PATH=/PATH/TO/sourcecatcher/sourcecatcher_venv/bin:/home/YOUR_USER/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/bin/bash /PATH/TO/sourcecatcher/update.sh
-
-[Install]
-WantedBy=sourcecatcher_update.timer
-```
-
-
-#### `/etc/systemd/system/sourcecatcher_update.timer`
-
-Periodically update Sourcecatcher
-
-```systemd
-[Unit]
-Description=update sourcecatcher
-
-[Timer]
-OnBootSec=15min
-OnUnitActiveSec=2hr
-
-[Install]
-WantedBy=timers.target
-```
-
-#### Start systemd services
-
-```bash
-sudo systemctl enable --now sourcecatcher.service
-sudo systemctl enable --now sourcecatcher_update.timer
-```
+Twitter user accounts used for running a local nitter instance.
+See upstream [Nitter](https://github.com/zedeus/nitter) documentation for how to generate this file.
