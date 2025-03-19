@@ -28,6 +28,13 @@
       file_input.style.border = 0;
       file_input.style.opacity = 0;
       file_input_label.style.display = 'inline-block';
+
+      window.addEventListener('paste', e => {
+        if (e.clipboardData.files.length !== 0) {
+          file_input.files = e.clipboardData.files;
+          form.submit();
+        }
+      });
     </script>
     <noscript>
       <button type="submit" value="submit">
